@@ -34,10 +34,10 @@ $border-color: #d9d9d9;
 .render-ui {
   width: 100%;
   height: 100%;
-  background-color: var(--primary-bg);
-  color: var(--primary-text);
+  background-color: var(--theme-surface);
+  color: var(--theme-on-surface);
   border-radius: $border-radius-lg;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--theme-box-shadow-light);
   padding: 24px;
   transition: $transition-base;
   overflow: hidden;

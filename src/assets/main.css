@@ -5,14 +5,7 @@
 }
 
 :root {
-  /* Element Plus 兼容变量 */
-  --theme-color-primary: #409eff;
-  --theme-color-primary-light-3: #79bbff;
-  --theme-color-primary-light-5: #a0cfff;
-  --theme-color-primary-light-7: #c6e2ff;
-  --theme-color-primary-light-8: #d9ecff;
-  --theme-color-primary-light-9: #ecf5ff;
-  --theme-color-primary-dark-2: #337ecc;
+  /* 其他兼容变量 */
   --theme-text-color-primary: #303133;
   --theme-text-color-regular: #606266;
   --theme-text-color-secondary: #909399;
@@ -22,9 +15,6 @@
   --theme-border-color-light: #e4e7ed;
   --theme-border-color-lighter: #ebeef5;
   --theme-border-color-extra-light: #f2f6fc;
-  --theme-bg-color: #ffffff;
-  --theme-bg-color-page: #f2f3f5;
-  --theme-bg-color-overlay: #ffffff;
   --theme-fill-color: #f0f2f5;
   --theme-fill-color-light: #f5f7fa;
   --theme-fill-color-lighter: #fafafa;
@@ -64,18 +54,23 @@
   --theme-inverse-surface: rgba(47, 48, 51, 1);
   --theme-inverse-on-surface: rgba(241, 240, 244, 1);
   --theme-inverse-primary: rgba(165, 200, 255, 1);
+
+  /* Element Plus 兼容性映射 */
+  --theme-color-primary: var(--theme-primary);
+  --theme-color-primary-light-3: var(--theme-primary-container);
+  --theme-color-primary-light-5: #a0cfff;
+  --theme-color-primary-light-7: #c6e2ff;
+  --theme-color-primary-light-8: #d9ecff;
+  --theme-color-primary-light-9: #ecf5ff;
+  --theme-color-primary-dark-2: var(--theme-on-primary-container);
+  --theme-bg-color: var(--theme-background);
+  --theme-bg-color-page: var(--theme-surface);
+  --theme-bg-color-overlay: var(--theme-surface);
 }
 
 /* 暗色模式变量 */
 html.dark {
-  /* Element Plus 兼容变量 - 暗黑模式 */
-  --theme-color-primary: #409eff;
-  --theme-color-primary-light-3: #283142;
-  --theme-color-primary-light-5: #2b3548;
-  --theme-color-primary-light-7: #324058;
-  --theme-color-primary-light-8: #384863;
-  --theme-color-primary-light-9: #3e5171;
-  --theme-color-primary-dark-2: #337ecc;
+  /* 其他兼容变量 - 暗黑模式 */
   --theme-text-color-primary: #e5eaf3;
   --theme-text-color-regular: #cfd3dc;
   --theme-text-color-secondary: #a3a6ad;
@@ -85,9 +80,6 @@ html.dark {
   --theme-border-color-light: #414243;
   --theme-border-color-lighter: #363637;
   --theme-border-color-extra-light: #2b2b2c;
-  --theme-bg-color: #141414;
-  --theme-bg-color-page: #0a0a0a;
-  --theme-bg-color-overlay: #1d1e1f;
   --theme-fill-color: #262727;
   --theme-fill-color-light: #1f2020;
   --theme-fill-color-lighter: #191919;
@@ -98,7 +90,7 @@ html.dark {
   --theme-box-shadow-light: 0px 0px 12px rgba(0, 0, 0, 0.72);
 
   /* 主题颜色变量 - 暗色模式 (这些会被JS动态覆盖) */
-  --theme-primary: rgba(165, 200, 255, 1); /* 深色模式中使用亮色版主题色 */
+  --theme-primary: rgba(165, 200, 255, 1);
   --theme-on-primary: rgba(0, 31, 69, 1);
   --theme-primary-container: rgba(0, 45, 97, 1);
   --theme-on-primary-container: rgba(212, 227, 255, 1);
@@ -127,14 +119,26 @@ html.dark {
   --theme-inverse-surface: rgba(47, 48, 51, 1);
   --theme-inverse-on-surface: rgba(241, 240, 244, 1);
   --theme-inverse-primary: rgba(165, 200, 255, 1);
+
+  /* Element Plus 兼容性映射 */
+  --theme-color-primary: var(--theme-primary);
+  --theme-color-primary-light-3: #283142;
+  --theme-color-primary-light-5: #2b3548;
+  --theme-color-primary-light-7: #324058;
+  --theme-color-primary-light-8: #384863;
+  --theme-color-primary-light-9: #3e5171;
+  --theme-color-primary-dark-2: var(--theme-on-primary-container);
+  --theme-bg-color: var(--theme-background);
+  --theme-bg-color-page: var(--theme-surface);
+  --theme-bg-color-overlay: var(--theme-surface);
 }
 
 html,
 body {
   width: 100%;
   height: 100%;
-  background-color: var(--theme-bg-color-page);
-  color: var(--theme-text-color-primary);
+  background-color: var(--theme-background);
+  color: var(--theme-on-background);
   transition: background-color 0.3s, color 0.3s;
 }
 

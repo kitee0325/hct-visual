@@ -35,15 +35,15 @@ export function useThemeManager() {
     if (!colors || !colors.props) return {};
 
     return {
-      // 根据需要返回组件常用的主题样式变量
-      '--primary-bg': colors.props.primary,
-      '--primary-text': colors.props.onPrimary,
-      '--secondary-bg': colors.props.secondary,
-      '--secondary-text': colors.props.onSecondary,
-      '--surface-bg': colors.props.surface,
-      '--surface-text': colors.props.onSurface,
-      '--error-color': colors.props.error,
-      '--outline-color': colors.props.outline,
+      // 使用主题颜色变量
+      '--primary-bg': `var(--theme-primary)`,
+      '--primary-text': `var(--theme-on-primary)`,
+      '--secondary-bg': `var(--theme-secondary)`,
+      '--secondary-text': `var(--theme-on-secondary)`,
+      '--surface-bg': `var(--theme-surface)`,
+      '--surface-text': `var(--theme-on-surface)`,
+      '--error-color': `var(--theme-error)`,
+      '--outline-color': `var(--theme-outline)`,
     };
   };
 

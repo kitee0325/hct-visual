@@ -66,9 +66,7 @@ onMounted(() => {
 $border-radius-sm: 8px;
 $border-radius-md: 12px;
 $border-radius-lg: 16px;
-$box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 $transition-base: all 0.3s ease;
-$border-color: #d9d9d9;
 
 .render-chart {
   width: 100%;
@@ -76,7 +74,7 @@ $border-color: #d9d9d9;
   background-color: var(--theme-surface);
   color: var(--theme-on-surface);
   border-radius: $border-radius-lg;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--theme-box-shadow-light);
   padding: 24px;
   transition: $transition-base;
   overflow: hidden;

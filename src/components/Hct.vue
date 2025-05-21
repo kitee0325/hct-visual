@@ -30,20 +30,20 @@ const initialCameraPosition = { x: 100, y: 50, z: 100 };
 const updateSceneBackground = () => {
   if (!scene) return;
 
-  // 从主题颜色中获取背景色，而不是使用硬编码值
+  // 使用主题变量获取背景色
   const bgColor = isDarkMode.value
-    ? themeColorsRgba.value.background ||
-      themeColorsRgba.value.props?.background ||
-      '#121212'
-    : themeColorsRgba.value.background ||
-      themeColorsRgba.value.props?.background ||
-      '#ffffff';
+    ? getComputedStyle(document.documentElement)
+        .getPropertyValue('--theme-background')
+        .trim()
+    : getComputedStyle(document.documentElement)
+        .getPropertyValue('--theme-background')
+        .trim();
 
-  scene.background = new THREE.Color(bgColor);
+  scene.background = new THREE.Color(bgColor || '#121212');
 
   // 同时确保容器背景色也被更新
   if (containerRef.value) {
-    containerRef.value.style.backgroundColor = bgColor;
+    containerRef.value.style.backgroundColor = bgColor || '#121212';
   }
 
   // 调试信息
@@ -61,9 +61,7 @@ const initThree = () => {
 
   // 检查CSS变量是否已正确应用
   const computedStyle = getComputedStyle(document.documentElement);
-  const surfaceColor =
-    computedStyle.getPropertyValue('--theme-background').trim() ||
-    computedStyle.getPropertyValue('--theme-surface').trim();
+  const surfaceColor = computedStyle.getPropertyValue('--theme-surface').trim();
 
   console.log('Initial CSS variables check:', {
     '--theme-background': computedStyle
