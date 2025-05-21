@@ -30,10 +30,11 @@ const initialCameraPosition = { x: 100, y: 50, z: 100 };
 const updateSceneBackground = () => {
   if (!scene) return;
 
-  // 直接使用主题颜色，避免DOM操作
-  const bgColor =
-    themeColorsRgba.value.background ||
-    (isDarkMode.value ? '#1d1e1f' : '#ffffff');
+  // 设置显式的深色/浅色背景色
+  const bgColor = isDarkMode.value
+    ? '#121212' // 暗黑模式下使用与其他区域一致的背景色
+    : themeColorsRgba.value.background || '#ffffff';
+
   scene.background = new THREE.Color(bgColor);
 };
 
@@ -363,6 +364,14 @@ watch(
   { deep: true }
 );
 
+// 监听暗色模式变化
+watch(
+  () => isDarkMode.value,
+  () => {
+    updateSceneBackground();
+  }
+);
+
 onMounted(() => {
   initThree();
   window.addEventListener('resize', handleResize, { passive: true });
@@ -423,15 +432,17 @@ $box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 $transition-base: all 0.3s ease;
 $border-color: #d9d9d9;
 
+// 直接使用全局主题变量
 .hct {
   width: 100%;
   height: 100%;
   position: relative;
   overflow: hidden;
-  background-color: var(--el-bg-color-overlay);
+  background-color: var(--theme-surface);
   border-radius: $border-radius-lg;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   transition: $transition-base;
+  color: var(--theme-on-surface);
 
   &-labels {
     position: absolute;
@@ -441,6 +452,11 @@ $border-color: #d9d9d9;
     height: 100%;
     pointer-events: none;
     user-select: none;
+
+    // Add better contrast for label SVGs in dark mode
+    html.dark & {
+      filter: brightness(1.2) contrast(1.1);
+    }
 
     &-hue {
       position: absolute;

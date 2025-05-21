@@ -3,12 +3,12 @@ import { Plus, Delete } from '@element-plus/icons-vue';
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { UploadFile } from 'element-plus';
-import { type CustomColor } from '@material/material-color-utilities';
 import {
+  type CustomColor,
   themeFromSourceColor,
   themeFromImage,
-  parseColorToArgb,
-} from '../tools/color';
+} from '@material/material-color-utilities';
+import { parseColorToArgb } from '../tools/color';
 import { useThemeColors } from '../composables/useThemeColors';
 
 // 使用共享的主题颜色组合式API
@@ -105,11 +105,6 @@ function generateTheme() {
     updateThemeColors(theme.schemes);
   }
 }
-
-// 组件初始化时生成默认主题
-onMounted(() => {
-  generateTheme();
-});
 
 // Function to copy color value to clipboard
 function copyColorToClipboard(color: string) {
@@ -245,7 +240,7 @@ function copyColorToClipboard(color: string) {
 
 <style scoped lang="scss">
 // Variables
-$primary-color: var(--el-color-primary, #409eff);
+$primary-color: var(--theme-primary, #409eff);
 $border-radius-sm: 8px;
 $border-radius-md: 12px;
 $border-radius-lg: 16px;
@@ -253,7 +248,7 @@ $box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 $transition-base: all 0.3s ease;
 $border-color: #d9d9d9;
 
-// Mixins
+// 使用全局主题变量，移除本地CSS变量定义
 @mixin hover-lift {
   transition: transform 0.2s, box-shadow 0.2s;
   &:hover {
@@ -273,15 +268,16 @@ $border-color: #d9d9d9;
     border-radius: inherit;
     background-image: linear-gradient(
         45deg,
-        var(--el-fill-color) 25%,
+        var(--theme-surface-variant) 25%,
         transparent 25%
       ),
-      linear-gradient(-45deg, var(--el-fill-color) 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, var(--el-fill-color) 75%),
-      linear-gradient(-45deg, transparent 75%, var(--el-fill-color) 75%);
-    background-size: 10px 10px;
-    background-position: 0 0, 0 5px, 5px -5px, -5px 0;
+      linear-gradient(-45deg, var(--theme-surface-variant) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--theme-surface-variant) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--theme-surface-variant) 75%);
+    background-size: 20px 20px;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0;
     z-index: -1;
+    opacity: 0.7;
   }
 }
 
@@ -289,15 +285,16 @@ $border-color: #d9d9d9;
 .form {
   height: 100%;
   padding: 24px 28px 24px 24px;
-  background-color: var(--el-bg-color-overlay);
+  background-color: var(--theme-surface);
   border-radius: $border-radius-lg;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  color: var(--theme-on-surface);
 
   h2 {
-    color: var(--el-text-color-primary);
+    color: var(--theme-on-surface);
     font-weight: 600;
     position: relative;
     padding-bottom: 8px;
@@ -310,7 +307,7 @@ $border-color: #d9d9d9;
       left: 0;
       width: 40px;
       height: 3px;
-      background-color: $primary-color;
+      background-color: var(--theme-primary);
       border-radius: 3px;
     }
 
@@ -331,7 +328,7 @@ $border-color: #d9d9d9;
       text-align: center;
       margin-top: 12px;
       font-weight: 500;
-      color: var(--el-text-color-primary);
+      color: var(--theme-on-surface);
       font-size: 14px;
     }
 
@@ -348,7 +345,7 @@ $border-color: #d9d9d9;
         top: 0;
         bottom: 0;
         width: 1px;
-        background: var(--el-border-color-light);
+        background: var(--theme-outline-variant);
         transform: translateX(-50%);
       }
 
@@ -358,13 +355,13 @@ $border-color: #d9d9d9;
         justify-content: center;
         width: 36px;
         height: 36px;
-        background: var(--el-bg-color-overlay);
-        border: 1px solid var(--el-border-color-light);
+        background: var(--theme-surface);
+        border: 1px solid var(--theme-outline-variant);
         border-radius: 50%;
         position: relative;
         z-index: 1;
         font-weight: 600;
-        color: var(--el-text-color-secondary);
+        color: var(--theme-on-surface-variant);
       }
     }
 
@@ -380,7 +377,7 @@ $border-color: #d9d9d9;
     &-img-uploader-box {
       width: 180px;
       height: 180px;
-      border: 2px dashed var(--el-border-color);
+      border: 2px dashed var(--theme-outline-variant);
       border-radius: $border-radius-md;
       cursor: pointer;
       position: relative;
@@ -389,10 +386,10 @@ $border-color: #d9d9d9;
       justify-content: center;
       align-items: center;
       transition: $transition-base;
-      background-color: var(--el-fill-color-light);
+      background-color: var(--theme-surface-variant);
 
       &:hover {
-        border-color: $primary-color;
+        border-color: var(--theme-primary);
         box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.1);
         transform: translateY(-2px);
       }
@@ -404,15 +401,10 @@ $border-color: #d9d9d9;
       }
 
       &-upload {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: var(--el-text-color-secondary);
+        color: var(--theme-on-surface-variant);
 
         &-icon {
-          font-size: 48px;
-          color: $primary-color;
+          color: var(--theme-primary);
         }
       }
 
@@ -420,7 +412,7 @@ $border-color: #d9d9d9;
         position: absolute;
         right: 8px;
         top: 8px;
-        background-color: var(--el-bg-color-overlay);
+        background-color: var(--theme-surface);
         border-radius: 50%;
         padding: 4px;
         backdrop-filter: blur(4px);
@@ -430,10 +422,10 @@ $border-color: #d9d9d9;
     // Color picker
     &-select-wrapper {
       padding: 10px;
-      border: 2px dashed var(--el-border-color);
+      border: 2px dashed var(--theme-outline-variant);
       border-radius: $border-radius-md;
       cursor: pointer;
-      background-color: var(--el-fill-color-light);
+      background-color: var(--theme-surface-variant);
       transition: $transition-base;
       display: flex;
       justify-content: center;
@@ -476,9 +468,7 @@ $border-color: #d9d9d9;
       }
 
       &:hover {
-        border-color: $primary-color;
-        box-shadow: 0 0 0 4px rgba(64, 158, 255, 0.1);
-        transform: translateY(-2px);
+        border-color: var(--theme-primary);
       }
     }
 
@@ -490,7 +480,7 @@ $border-color: #d9d9d9;
   // Custom colors section
   &-custom {
     margin-top: 24px;
-    background-color: var(--el-fill-color-light);
+    background-color: var(--theme-surface-variant);
     padding: 20px;
     border-radius: $border-radius-md;
 
@@ -500,10 +490,10 @@ $border-color: #d9d9d9;
       gap: 16px;
       margin-bottom: 20px;
       padding-bottom: 16px;
-      border-bottom: 1px solid var(--el-border-color-light);
+      border-bottom: 1px solid var(--theme-outline-variant);
 
       &-label {
-        color: var(--el-text-color-regular);
+        color: var(--theme-on-surface);
         font-size: 16px;
         font-weight: 600;
       }
@@ -549,7 +539,7 @@ $border-color: #d9d9d9;
 
         span {
           font-size: 14px;
-          color: var(--el-text-color-regular);
+          color: var(--theme-on-surface-variant);
         }
       }
     }
@@ -568,19 +558,16 @@ $border-color: #d9d9d9;
         width: 8px;
 
         &-track {
-          background: var(--el-fill-color-light);
+          background: var(--theme-surface-variant);
           border-radius: 4px;
         }
 
         &-thumb {
-          background: var(--el-border-color);
+          background: var(--theme-outline);
           border-radius: 4px;
 
           &:hover {
-            background: var(
-              --el-border-color-darker,
-              var(--el-border-color-dark)
-            );
+            background: var(--theme-outline);
           }
         }
       }
@@ -593,7 +580,7 @@ $border-color: #d9d9d9;
         &-label {
           font-size: 14px;
           font-weight: 500;
-          color: var(--el-text-color-primary);
+          color: var(--theme-on-surface);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -606,8 +593,8 @@ $border-color: #d9d9d9;
           display: flex;
           align-items: center;
           justify-content: center;
-          border: 1px solid var(--el-border-color-light);
-          box-shadow: var(--el-box-shadow-light);
+          border: 1px solid var(--theme-outline-variant);
+          box-shadow: var(--theme-box-shadow-light);
           position: relative;
           cursor: pointer;
           @include hover-lift;

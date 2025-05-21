@@ -38,7 +38,7 @@ $border-color: #d9d9d9;
 .render-chart {
   width: 100%;
   height: 100%;
-  background-color: var(--el-bg-color-overlay);
+  background-color: var(--theme-surface);
   border-radius: $border-radius-lg;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   padding: 24px;

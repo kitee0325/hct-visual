@@ -1,9 +1,4 @@
-import {
-  themeFromSourceColor,
-  themeFromImage,
-  argbFromRgba,
-  rgbaFromArgb,
-} from '@material/material-color-utilities';
+import { argbFromRgba, rgbaFromArgb } from '@material/material-color-utilities';
 
 /**
  * Converts ARGB color value to RGBA string format
@@ -57,8 +52,23 @@ export function transformSchemeToRgba(scheme: any): any {
     }
   }
 
+  // 添加props属性用于模板中的v-for循环
+  if (!result.props) {
+    // 复制顶层颜色值到props属性中，排除不是颜色的属性
+    result.props = {};
+    for (const key in result) {
+      if (
+        key !== 'toJSON' &&
+        key !== 'props' &&
+        typeof result[key] === 'string' &&
+        result[key].startsWith('rgba')
+      ) {
+        result.props[key] = result[key];
+      }
+    }
+  }
+
   return result;
 }
 
-// Re-export functions from material-color-utilities
-export { themeFromSourceColor, themeFromImage, argbFromRgba, rgbaFromArgb };
+export { argbFromRgba, rgbaFromArgb };
