@@ -1,38 +1,18 @@
 <script setup lang="ts">
-import { onMounted, watch, computed } from 'vue';
-import { useThemeColors } from '../composables/useThemeColors';
+import { onMounted, computed } from 'vue';
+import { useThemeManager } from '../composables/useThemeManager';
 
-// 使用共享的主题颜色状态
-const { themeColorsRgba, isDarkMode } = useThemeColors();
+// 使用主题管理器
+const { themeColorsRgba, isDarkMode, getThemeStyles } = useThemeManager();
 
 // 计算组件使用的主题样式
 const themeStyles = computed(() => {
-  const colors = themeColorsRgba.value;
-
-  if (!colors.props) return {};
-
-  return {
-    '--primary-bg': colors.props.primary,
-    '--primary-text': isDarkMode.value
-      ? colors.props.onPrimary
-      : colors.props.onPrimary,
-    '--secondary-bg': colors.props.secondary,
-    '--secondary-text': colors.props.onSecondary,
-    // 可以添加更多样式变量
-  };
+  return getThemeStyles();
 });
-
-// 监听主题颜色变化
-watch(
-  () => themeColorsRgba.value,
-  (newThemeColors) => {
-    console.log('Theme colors updated in RenderUI:', newThemeColors);
-  },
-  { deep: true }
-);
 
 onMounted(() => {
   // 初始化UI渲染逻辑
+  console.log('RenderUI mounted with theme:', themeColorsRgba.value);
 });
 </script>
 

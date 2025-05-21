@@ -17,10 +17,8 @@ declare module 'vue' {
     ElUpload: typeof import('element-plus/es')['ElUpload']
     Form: typeof import('./src/components/Form.vue')['default']
     Hct: typeof import('./src/components/Hct.vue')['default']
-    HctVisualization: typeof import('./src/components/HctVisualization.vue')['default']
     RenderChart: typeof import('./src/components/RenderChart.vue')['default']
     RenderUI: typeof import('./src/components/RenderUI.vue')['default']
-    ThemeController: typeof import('./src/components/ThemeController.vue')['default']
     ThemeProvider: typeof import('./src/components/ThemeProvider.vue')['default']
   }
 }

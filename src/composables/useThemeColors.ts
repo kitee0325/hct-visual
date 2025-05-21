@@ -67,6 +67,24 @@ function updateCssVariables(theme: any) {
     const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
     root.style.setProperty(`--theme-${cssKey}`, value);
   });
+
+  // 确保props中的所有颜色也被应用
+  if (theme.props) {
+    Object.entries(theme.props).forEach(([key, value]) => {
+      if (typeof value === 'string' && value.startsWith('rgba')) {
+        const cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+        root.style.setProperty(`--theme-${cssKey}`, value as string);
+      }
+    });
+  }
+
+  // 添加调试信息
+  console.log('CSS variables updated:', {
+    surface: root.style.getPropertyValue('--theme-surface'),
+    background: root.style.getPropertyValue('--theme-background'),
+    darkMode: document.documentElement.classList.contains('dark'),
+    currentTheme: isDarkMode.value ? 'dark' : 'light',
+  });
 }
 
 // 更新主题颜色的方法
@@ -91,6 +109,18 @@ function toggleDarkMode(isDark?: boolean) {
   applyDarkMode(isDarkMode.value);
   // 保存到本地存储
   localStorage.setItem('isDarkMode', isDarkMode.value.toString());
+
+  // 立即更新CSS变量以确保正确应用当前主题
+  const currentTheme = isDarkMode.value
+    ? transformSchemeToRgba(themeColors.value.dark)
+    : transformSchemeToRgba(themeColors.value.light);
+
+  console.log('Toggle dark mode:', {
+    isDarkMode: isDarkMode.value,
+    currentThemeMode: isDarkMode.value ? 'dark' : 'light',
+  });
+
+  updateCssVariables(currentTheme);
 }
 
 // 初始化默认主题

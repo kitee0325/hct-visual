@@ -9,11 +9,11 @@ import {
   themeFromImage,
 } from '@material/material-color-utilities';
 import { parseColorToArgb } from '../tools/color';
-import { useThemeColors } from '../composables/useThemeColors';
+import { useThemeManager } from '../composables/useThemeManager';
 
-// 使用共享的主题颜色组合式API
-const { themeColorsRgba, isDarkMode, updateThemeColors, toggleDarkMode } =
-  useThemeColors();
+// 使用主题管理器
+const { themeColorsRgba, isDarkMode, toggleDarkMode, applyTheme } =
+  useThemeManager();
 
 const imageUrl = ref<string>('');
 const colorSelected = ref('rgba(30, 144, 255, 1)');
@@ -23,8 +23,6 @@ const latestAction = ref<'image' | 'color'>('color');
 // 自定义颜色相关
 const customColors = ref<string[]>([]);
 const currentCustomColor = ref('#409EFF');
-
-// Using the getColorFromArgb function from tools/color.ts
 
 // 将customColors转换为ARGB格式的计算属性
 const customColorsArgb = computed(() =>
@@ -72,8 +70,6 @@ function handleColorChange(color: string) {
   latestAction.value = 'color';
 }
 
-// Using the parseColorToArgb function from tools/color.ts
-
 function generateTheme() {
   let theme;
   if (latestAction.value === 'image') {
@@ -81,12 +77,41 @@ function generateTheme() {
       ElMessage.error('Upload image first');
       return;
     }
+
+    // Show loading message
+    ElMessage({
+      message: 'Generating theme from image...',
+      type: 'info',
+      duration: 2000,
+    });
+
     // 创建图像元素并加载
     const img = new Image();
     img.src = imageUrl.value;
+
+    // Add error handling
+    img.onerror = () => {
+      ElMessage.error('Failed to load image');
+    };
+
     img.onload = async () => {
-      theme = await themeFromImage(img);
-      updateThemeColors(theme.schemes);
+      try {
+        theme = await themeFromImage(img);
+        if (theme && theme.schemes) {
+          // 使用主题管理器的applyTheme方法
+          applyTheme(theme.schemes);
+          ElMessage({
+            message: 'Theme generated successfully!',
+            type: 'success',
+            duration: 2000,
+          });
+        } else {
+          ElMessage.error('Failed to generate theme from image');
+        }
+      } catch (error) {
+        console.error('Error generating theme from image:', error);
+        ElMessage.error('Error generating theme from image');
+      }
     };
   } else {
     // 将原始ARGB值转换为CustomColor对象
@@ -98,11 +123,27 @@ function generateTheme() {
       } as CustomColor;
     });
 
-    theme = themeFromSourceColor(
-      parseColorToArgb(colorSelected.value),
-      customColorObjects
-    );
-    updateThemeColors(theme.schemes);
+    try {
+      theme = themeFromSourceColor(
+        parseColorToArgb(colorSelected.value),
+        customColorObjects
+      );
+
+      if (theme && theme.schemes) {
+        // 使用主题管理器的applyTheme方法
+        applyTheme(theme.schemes);
+        ElMessage({
+          message: 'Theme generated successfully!',
+          type: 'success',
+          duration: 2000,
+        });
+      } else {
+        ElMessage.error('Failed to generate theme from color');
+      }
+    } catch (error) {
+      console.error('Error generating theme from color:', error);
+      ElMessage.error('Error generating theme from color');
+    }
   }
 }
 

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watchEffect } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Hct } from '@material/material-color-utilities';
 import chromaLabelImg from '@/assets/chroma-label.svg';
 import hueLabelImg from '@/assets/hue-label.svg';
 import toneLabelImg from '@/assets/tone-label.svg';
-import { useThemeColors } from '../composables/useThemeColors';
+import { useThemeManager } from '../composables/useThemeManager';
 
-// 使用共享的主题颜色状态
-const { themeColorsRgba, isDarkMode } = useThemeColors();
+// 使用主题管理器共享的主题颜色状态
+const { themeColorsRgba, isDarkMode } = useThemeManager();
 
 const containerRef = ref<HTMLElement | null>(null);
 const isAutoRotating = ref(true);
@@ -30,16 +30,49 @@ const initialCameraPosition = { x: 100, y: 50, z: 100 };
 const updateSceneBackground = () => {
   if (!scene) return;
 
-  // 设置显式的深色/浅色背景色
+  // 从主题颜色中获取背景色，而不是使用硬编码值
   const bgColor = isDarkMode.value
-    ? '#121212' // 暗黑模式下使用与其他区域一致的背景色
-    : themeColorsRgba.value.background || '#ffffff';
+    ? themeColorsRgba.value.background ||
+      themeColorsRgba.value.props?.background ||
+      '#121212'
+    : themeColorsRgba.value.background ||
+      themeColorsRgba.value.props?.background ||
+      '#ffffff';
 
   scene.background = new THREE.Color(bgColor);
+
+  // 同时确保容器背景色也被更新
+  if (containerRef.value) {
+    containerRef.value.style.backgroundColor = bgColor;
+  }
+
+  // 调试信息
+  console.log('HCT Scene background updated:', {
+    isDarkMode: isDarkMode.value,
+    bgColor,
+    themeBackground: themeColorsRgba.value.background,
+    propsBackground: themeColorsRgba.value.props?.background,
+    time: new Date().toLocaleTimeString(), // 添加时间戳以便在控制台识别更新时间点
+  });
 };
 
 const initThree = () => {
   if (!containerRef.value) return;
+
+  // 检查CSS变量是否已正确应用
+  const computedStyle = getComputedStyle(document.documentElement);
+  const surfaceColor =
+    computedStyle.getPropertyValue('--theme-background').trim() ||
+    computedStyle.getPropertyValue('--theme-surface').trim();
+
+  console.log('Initial CSS variables check:', {
+    '--theme-background': computedStyle
+      .getPropertyValue('--theme-background')
+      .trim(),
+    '--theme-surface': computedStyle.getPropertyValue('--theme-surface').trim(),
+    isDarkMode: isDarkMode.value,
+    themeColorsRgba: themeColorsRgba.value,
+  });
 
   // 创建渲染器
   renderer = new THREE.WebGLRenderer({
@@ -355,26 +388,24 @@ const handleResize = () => {
   renderer.setSize(width, height);
 };
 
-// 监听主题变化，更新背景色
-watch(
-  () => themeColorsRgba.value,
-  () => {
-    updateSceneBackground();
-  },
-  { deep: true }
-);
-
-// 监听暗色模式变化
-watch(
-  () => isDarkMode.value,
-  () => {
-    updateSceneBackground();
-  }
-);
-
 onMounted(() => {
+  // 初始化Three.js
   initThree();
   window.addEventListener('resize', handleResize, { passive: true });
+
+  // 添加主题变化监听，确保在onMounted内部设置，以便scene已经初始化
+  watchEffect(() => {
+    if (scene && themeColorsRgba.value) {
+      // 显式引用isDarkMode.value以确保正确收集依赖
+      const currentMode = isDarkMode.value;
+      console.log(
+        '主题变化检测: 当前模式 =',
+        currentMode ? '暗色' : '亮色',
+        new Date().toLocaleTimeString()
+      );
+      updateSceneBackground();
+    }
+  });
 });
 
 onBeforeUnmount(() => {

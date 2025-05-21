@@ -1,27 +1,62 @@
 <script setup lang="ts">
-import { onMounted, watch } from 'vue';
-import { useThemeColors } from '../composables/useThemeColors';
+import { onMounted, computed, ref, watchEffect } from 'vue';
+import { useThemeManager } from '../composables/useThemeManager';
 
-// 使用共享的主题颜色状态
-const { themeColorsRgba } = useThemeColors();
+// 使用主题管理器
+const { themeColorsRgba, lastUpdatedTimestamp } = useThemeManager();
+const chartContainerRef = ref(null);
 
-// 监听主题颜色变化
-watch(
-  () => themeColorsRgba.value,
-  (newThemeColors) => {
-    // 这里可以实现基于主题颜色的图表渲染逻辑
-    console.log('Theme colors updated in RenderChart:', newThemeColors);
-  },
-  { deep: true }
-);
+// 计算主题样式
+const chartStyles = computed(() => {
+  const colors = themeColorsRgba.value;
+  if (!colors || !colors.props) return {};
+
+  return {
+    backgroundColor: colors.surface || colors.props.surface,
+    color: colors.onSurface || colors.props.onSurface,
+    borderColor: colors.outline || colors.props.outline,
+  };
+});
+
+// 更新图表显示
+function updateChartDisplay(colors: any) {
+  if (!colors || !colors.props) return;
+
+  // 这里可以实现基于主题颜色的图表渲染逻辑
+  // 例如：使用echarts或其他图表库更新图表颜色
+
+  // 确保直接修改DOM元素的样式以应用主题颜色
+  if (chartContainerRef.value) {
+    const container = chartContainerRef.value as HTMLElement;
+    container.style.backgroundColor = colors.props.surface;
+    container.style.color = colors.props.onSurface;
+    container.style.borderColor = colors.props.outline;
+
+    // 添加更新时间戳，便于追踪最近一次更新
+    console.log(
+      'Chart updated at:',
+      new Date(lastUpdatedTimestamp.value).toLocaleTimeString()
+    );
+  }
+}
+
+// 使用watchEffect监听主题变化
+watchEffect(() => {
+  if (themeColorsRgba.value && chartContainerRef.value) {
+    updateChartDisplay(themeColorsRgba.value);
+  }
+});
 
 onMounted(() => {
-  // 初始化图表渲染逻辑
+  // 确保在组件挂载后应用初始主题
+  if (themeColorsRgba.value && themeColorsRgba.value.props) {
+    updateChartDisplay(themeColorsRgba.value);
+  }
 });
 </script>
 
 <template>
-  <div class="render-chart">
+  <div class="render-chart" ref="chartContainerRef" :style="chartStyles">
     <!-- Chart content goes here -->
   </div>
 </template>
@@ -39,6 +74,7 @@ $border-color: #d9d9d9;
   width: 100%;
   height: 100%;
   background-color: var(--theme-surface);
+  color: var(--theme-on-surface);
   border-radius: $border-radius-lg;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
   padding: 24px;
