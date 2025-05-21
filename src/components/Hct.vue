@@ -45,15 +45,6 @@ const updateSceneBackground = () => {
   if (containerRef.value) {
     containerRef.value.style.backgroundColor = bgColor || '#121212';
   }
-
-  // 调试信息
-  console.log('HCT Scene background updated:', {
-    isDarkMode: isDarkMode.value,
-    bgColor,
-    themeBackground: themeColorsRgba.value.background,
-    propsBackground: themeColorsRgba.value.props?.background,
-    time: new Date().toLocaleTimeString(), // 添加时间戳以便在控制台识别更新时间点
-  });
 };
 
 const initThree = () => {
@@ -62,15 +53,6 @@ const initThree = () => {
   // 检查CSS变量是否已正确应用
   const computedStyle = getComputedStyle(document.documentElement);
   const surfaceColor = computedStyle.getPropertyValue('--theme-surface').trim();
-
-  console.log('Initial CSS variables check:', {
-    '--theme-background': computedStyle
-      .getPropertyValue('--theme-background')
-      .trim(),
-    '--theme-surface': computedStyle.getPropertyValue('--theme-surface').trim(),
-    isDarkMode: isDarkMode.value,
-    themeColorsRgba: themeColorsRgba.value,
-  });
 
   // 创建渲染器
   renderer = new THREE.WebGLRenderer({
@@ -396,11 +378,6 @@ onMounted(() => {
     if (scene && themeColorsRgba.value) {
       // 显式引用isDarkMode.value以确保正确收集依赖
       const currentMode = isDarkMode.value;
-      console.log(
-        '主题变化检测: 当前模式 =',
-        currentMode ? '暗色' : '亮色',
-        new Date().toLocaleTimeString()
-      );
       updateSceneBackground();
     }
   });

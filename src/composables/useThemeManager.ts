@@ -54,10 +54,6 @@ export function useThemeManager() {
   const applyTheme = (newTheme: { light: Scheme; dark: Scheme }) => {
     updateThemeColors(newTheme);
     lastUpdatedTimestamp.value = Date.now();
-    console.log(
-      'Theme applied at:',
-      new Date(lastUpdatedTimestamp.value).toLocaleTimeString()
-    );
   };
 
   /**
@@ -137,8 +133,6 @@ export function useThemeManager() {
       light: lightTheme,
       dark: darkTheme,
     });
-
-    console.log('Theme reset to default');
   };
 
   /**
@@ -155,7 +149,6 @@ export function useThemeManager() {
           dark: themeColors.value.dark,
         })
       );
-      console.log('Theme saved to localStorage');
     } catch (error) {
       console.error('Failed to save theme to localStorage:', error);
     }
@@ -174,7 +167,6 @@ export function useThemeManager() {
         const parsedTheme = JSON.parse(savedTheme);
         if (parsedTheme && parsedTheme.light && parsedTheme.dark) {
           updateThemeColors(parsedTheme);
-          console.log('Theme loaded from localStorage');
           return true;
         }
       }
@@ -200,18 +192,11 @@ export function useThemeManager() {
       // 当主题颜色或模式变化时，更新时间戳
       if (themeColorsRgba.value) {
         lastUpdatedTimestamp.value = Date.now();
-        console.log(
-          'Theme updated at:',
-          new Date(lastUpdatedTimestamp.value).toLocaleTimeString()
-        );
 
         // 当主题变化时保存到本地存储
         saveThemeToLocalStorage();
       }
     });
-
-    // 可以在这里添加其他全局初始化逻辑
-    console.log('Theme manager initialized');
   }
 
   return {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue';
+import { computed } from 'vue';
 import { useThemeManager } from '../composables/useThemeManager';
 
 // 使用主题管理器
@@ -8,11 +8,6 @@ const { themeColorsRgba, isDarkMode, getThemeStyles } = useThemeManager();
 // 计算组件使用的主题样式
 const themeStyles = computed(() => {
   return getThemeStyles();
-});
-
-onMounted(() => {
-  // 初始化UI渲染逻辑
-  console.log('RenderUI mounted with theme:', themeColorsRgba.value);
 });
 </script>
 

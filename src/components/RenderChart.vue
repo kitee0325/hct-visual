@@ -31,12 +31,6 @@ function updateChartDisplay(colors: any) {
     container.style.backgroundColor = colors.props.surface;
     container.style.color = colors.props.onSurface;
     container.style.borderColor = colors.props.outline;
-
-    // 添加更新时间戳，便于追踪最近一次更新
-    console.log(
-      'Chart updated at:',
-      new Date(lastUpdatedTimestamp.value).toLocaleTimeString()
-    );
   }
 }
 

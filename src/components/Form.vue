@@ -10,10 +10,14 @@ import {
 } from '@material/material-color-utilities';
 import { parseColorToArgb } from '../tools/color';
 import { useThemeManager } from '../composables/useThemeManager';
+import { useElementTheme } from '../composables/useElementTheme';
 
 // 使用主题管理器
 const { themeColorsRgba, isDarkMode, toggleDarkMode, applyTheme } =
   useThemeManager();
+
+// 初始化 Element Plus 主题映射
+const { applyElementTheme } = useElementTheme();
 
 const imageUrl = ref<string>('');
 const colorSelected = ref('rgba(30, 144, 255, 1)');
@@ -100,6 +104,8 @@ function generateTheme() {
         if (theme && theme.schemes) {
           // 使用主题管理器的applyTheme方法
           applyTheme(theme.schemes);
+          // 应用到Element Plus组件
+          applyElementTheme();
           ElMessage({
             message: 'Theme generated successfully!',
             type: 'success',
@@ -109,7 +115,6 @@ function generateTheme() {
           ElMessage.error('Failed to generate theme from image');
         }
       } catch (error) {
-        console.error('Error generating theme from image:', error);
         ElMessage.error('Error generating theme from image');
       }
     };
@@ -132,6 +137,8 @@ function generateTheme() {
       if (theme && theme.schemes) {
         // 使用主题管理器的applyTheme方法
         applyTheme(theme.schemes);
+        // 应用到Element Plus组件
+        applyElementTheme();
         ElMessage({
           message: 'Theme generated successfully!',
           type: 'success',
@@ -141,7 +148,6 @@ function generateTheme() {
         ElMessage.error('Failed to generate theme from color');
       }
     } catch (error) {
-      console.error('Error generating theme from color:', error);
       ElMessage.error('Error generating theme from color');
     }
   }
@@ -257,7 +263,15 @@ function copyColorToClipboard(color: string) {
         <el-button type="primary" @click="generateTheme">Generate</el-button>
         <div class="form-theme-action-mode">
           <span>Light</span>
-          <el-switch v-model="isDarkMode" @change="toggleDarkMode" />
+          <el-switch
+            v-model="isDarkMode"
+            @change="
+              (val: boolean) => {
+                toggleDarkMode(val);
+                applyElementTheme();
+              }
+            "
+          />
           <span>Dark</span>
         </div>
       </div>

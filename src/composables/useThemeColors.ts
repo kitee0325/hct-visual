@@ -77,14 +77,6 @@ function updateCssVariables(theme: any) {
       }
     });
   }
-
-  // 添加调试信息
-  console.log('CSS variables updated:', {
-    surface: root.style.getPropertyValue('--theme-surface'),
-    background: root.style.getPropertyValue('--theme-background'),
-    darkMode: document.documentElement.classList.contains('dark'),
-    currentTheme: isDarkMode.value ? 'dark' : 'light',
-  });
 }
 
 // 更新主题颜色的方法
@@ -114,11 +106,6 @@ function toggleDarkMode(isDark?: boolean) {
   const currentTheme = isDarkMode.value
     ? transformSchemeToRgba(themeColors.value.dark)
     : transformSchemeToRgba(themeColors.value.light);
-
-  console.log('Toggle dark mode:', {
-    isDarkMode: isDarkMode.value,
-    currentThemeMode: isDarkMode.value ? 'dark' : 'light',
-  });
 
   updateCssVariables(currentTheme);
 }
