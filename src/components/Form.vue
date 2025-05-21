@@ -342,7 +342,7 @@ $border-color: #d9d9d9;
   padding: 24px 28px 24px 24px;
   background-color: var(--theme-surface);
   border-radius: $border-radius-lg;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--theme-box-shadow-light);
   display: flex;
   flex-direction: column;
   overflow: hidden;

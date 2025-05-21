@@ -446,7 +446,7 @@ $border-color: #d9d9d9;
   overflow: hidden;
   background-color: var(--theme-surface);
   border-radius: $border-radius-lg;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--theme-box-shadow-light);
   transition: $transition-base;
   color: var(--theme-on-surface);
 
