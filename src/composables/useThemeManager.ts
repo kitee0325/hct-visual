@@ -1,6 +1,5 @@
 import { ref, computed, watchEffect } from 'vue';
 import { type Scheme } from '@material/material-color-utilities';
-import { transformSchemeToRgba } from '../tools/color';
 import { useThemeColors } from './useThemeColors';
 
 // 创建一个单例模式的主题管理器

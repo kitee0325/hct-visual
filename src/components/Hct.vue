@@ -1,16 +1,51 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watchEffect } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watchEffect, computed } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { Hct } from '@material/material-color-utilities';
 import chromaLabelImg from '@/assets/chroma-label.svg';
 import hueLabelImg from '@/assets/hue-label.svg';
 import toneLabelImg from '@/assets/tone-label.svg';
-import { useThemeManager } from '../composables/useThemeManager';
 import { useThemeColors } from '../composables/useThemeColors';
 
 // 使用主题管理器共享的主题颜色状态
 const { themeColors, themeColorsRgba, isDarkMode } = useThemeColors();
+
+// 将主题颜色转换为HCT格式
+interface ThemeColorHct {
+  id: string;
+  hue: number;
+  chroma: number;
+  tone: number;
+}
+
+const themeColorsHct = computed<ThemeColorHct[]>(() => {
+  const result: ThemeColorHct[] = [];
+  const currentTheme = isDarkMode.value
+    ? themeColors.value.dark
+    : themeColors.value.light;
+
+  if (!currentTheme) return [];
+
+  Object.entries(currentTheme).forEach(([id, value]) => {
+    // 跳过非颜色属性
+    if (id === 'toJSON' || typeof value !== 'number') {
+      return;
+    }
+
+    // 将ARGB转换为HCT
+    const hctColor = Hct.fromInt(value);
+
+    result.push({
+      id,
+      hue: hctColor.hue,
+      chroma: hctColor.chroma,
+      tone: hctColor.tone,
+    });
+  });
+
+  return result;
+});
 
 const containerRef = ref<HTMLElement | null>(null);
 const isAutoRotating = ref(true);
@@ -24,6 +59,7 @@ let sphereGeometry: THREE.SphereGeometry;
 let material: THREE.MeshStandardMaterial;
 let autoRotateTimeout: number | null = null;
 let animationFrameId: number | null = null;
+let themeColorSpheres: THREE.Mesh[] = [];
 const INACTIVITY_TIMEOUT = 2000;
 const initialCameraPosition = { x: 100, y: 50, z: 100 };
 
@@ -343,6 +379,54 @@ const createHctVisualization = () => {
   }
 
   scene.add(instancedMesh);
+
+  // Add theme color spheres
+  updateThemeColorSpheres();
+};
+
+// Function to update theme color spheres
+const updateThemeColorSpheres = () => {
+  if (!scene) return;
+
+  // Remove existing theme color spheres
+  themeColorSpheres.forEach((sphere) => {
+    scene.remove(sphere);
+    sphere.geometry.dispose();
+    (sphere.material as THREE.Material).dispose();
+  });
+  themeColorSpheres = [];
+
+  // Create new spheres for each theme color - matching point cloud size exactly
+  const themeGeometry = new THREE.SphereGeometry(1, 6, 4); // Same size as point cloud
+
+  themeColorsHct.value.forEach((color) => {
+    // 创建原始颜色和适配颜色（如果需要）
+    let finalHue = color.hue;
+    let finalChroma = color.chroma;
+    let finalTone = color.tone;
+
+    // Use the same position calculation logic as in createHctVisualization
+    const hueRadians = THREE.MathUtils.degToRad(finalHue);
+    const x = finalChroma * Math.cos(hueRadians);
+    const y = finalTone;
+    const z = finalChroma * Math.sin(hueRadians);
+
+    // Create material with the theme color - matching point cloud material exactly
+    const colorInt = Hct.from(finalHue, finalChroma, finalTone).toInt();
+    const material = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(colorInt & 0x00ffffff),
+      roughness: 0.7,
+      metalness: 0.2,
+    });
+
+    // Create the sphere mesh
+    const sphere = new THREE.Mesh(themeGeometry, material);
+    sphere.position.set(x, y, z);
+
+    // Add to scene and store reference
+    scene.add(sphere);
+    themeColorSpheres.push(sphere);
+  });
 };
 
 const animate = () => {
@@ -374,7 +458,14 @@ onMounted(() => {
   initThree();
   window.addEventListener('resize', handleResize, { passive: true });
 
-  // 添加主题变化监听，确保在onMounted内部设置，以便scene已经初始化
+  // Add theme colors watch effect
+  watchEffect(() => {
+    if (scene && themeColorsHct.value.length > 0) {
+      updateThemeColorSpheres();
+    }
+  });
+
+  // Watch for theme mode changes
   watchEffect(() => {
     if (scene && themeColorsRgba.value) {
       // 显式引用isDarkMode.value以确保正确收集依赖
@@ -399,6 +490,14 @@ onBeforeUnmount(() => {
 
   // 移除事件监听器
   removeEventListeners();
+
+  // Clean up theme color spheres
+  themeColorSpheres.forEach((sphere) => {
+    scene.remove(sphere);
+    sphere.geometry.dispose();
+    (sphere.material as THREE.Material).dispose();
+  });
+  themeColorSpheres = [];
 
   // 释放Three.js资源
   if (instancedMesh) {
