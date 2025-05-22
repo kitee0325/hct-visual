@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Plus, Delete } from '@element-plus/icons-vue';
+import { Plus, Delete, Moon, Sunny } from '@element-plus/icons-vue';
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { UploadFile } from 'element-plus';
@@ -178,6 +178,24 @@ function copyColorToClipboard(color: string) {
 <template>
   <div class="form">
     <h2>Provide Primary Color</h2>
+
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle">
+      <el-button
+        circle
+        size="large"
+        :type="isDarkMode ? 'info' : 'warning'"
+        @click="
+          toggleDarkMode(!isDarkMode);
+          applyElementTheme();
+        "
+      >
+        <el-icon :size="20"
+          ><component :is="isDarkMode ? Moon : Sunny"
+        /></el-icon>
+      </el-button>
+    </div>
+
     <div class="form-color">
       <div class="form-color-img">
         <el-upload
@@ -257,24 +275,15 @@ function copyColorToClipboard(color: string) {
         </el-tag>
       </div>
     </div>
-    <h2>Generate Theme</h2>
+
+    <div class="generate-action">
+      <el-button type="primary" size="large" @click="generateTheme"
+        >Generate</el-button
+      >
+    </div>
+
+    <h2>Browser Theme</h2>
     <div class="form-theme">
-      <div class="form-theme-action">
-        <el-button type="primary" @click="generateTheme">Generate</el-button>
-        <div class="form-theme-action-mode">
-          <span>Light</span>
-          <el-switch
-            v-model="isDarkMode"
-            @change="
-              (val: boolean) => {
-                toggleDarkMode(val);
-                applyElementTheme();
-              }
-            "
-          />
-          <span>Dark</span>
-        </div>
-      </div>
       <div class="form-theme-result">
         <div
           class="form-theme-result-item"
@@ -347,6 +356,7 @@ $border-color: #d9d9d9;
   flex-direction: column;
   overflow: hidden;
   color: var(--theme-on-surface);
+  position: relative; /* Added for absolute positioning of the theme toggle */
 
   h2 {
     color: var(--theme-on-surface);
@@ -573,31 +583,28 @@ $border-color: #d9d9d9;
     }
   }
 
+  // Generate button outside the form-custom
+  .generate-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+    margin-bottom: 32px;
+
+    .el-button {
+      padding: 12px 28px;
+      font-size: 16px;
+      font-weight: 600;
+      @include hover-lift;
+    }
+  }
+
   // Theme generation section
   &-theme {
     flex: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-
-    &-action {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      margin-bottom: 20px;
-
-      &-mode {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-
-        span {
-          font-size: 14px;
-          color: var(--theme-on-surface-variant);
-        }
-      }
-    }
+    position: relative;
 
     &-result {
       width: 100%;
@@ -608,6 +615,7 @@ $border-color: #d9d9d9;
       gap: 16px;
       padding-right: 12px;
       padding-bottom: 16px;
+      position: relative;
 
       &::-webkit-scrollbar {
         width: 8px;
@@ -656,6 +664,28 @@ $border-color: #d9d9d9;
           @include checkerboard-bg;
         }
       }
+    }
+  }
+}
+
+// Theme toggle button
+.theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+
+  .el-button {
+    box-shadow: var(--theme-box-shadow-light);
+    transition: transform 0.3s ease;
+    padding: 12px;
+
+    &:hover {
+      transform: rotate(15deg);
+    }
+
+    .el-icon {
+      font-size: 1.5rem;
     }
   }
 }

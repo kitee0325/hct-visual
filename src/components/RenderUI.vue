@@ -227,12 +227,38 @@ $border-color: #d9d9d9;
   box-shadow: var(--theme-box-shadow-light);
   padding: 20px;
   transition: $transition-base;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
 
   // Waterfall layout using CSS columns
   &-waterfall {
     column-count: 3;
     column-gap: 16px;
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 12px;
+    padding-bottom: 16px;
+
+    // Scrollbar styling to match Form.vue
+    &::-webkit-scrollbar {
+      width: 8px;
+
+      &-track {
+        background: var(--theme-surface-variant);
+        border-radius: 4px;
+      }
+
+      &-thumb {
+        background: var(--theme-outline);
+        border-radius: 4px;
+
+        &:hover {
+          background: var(--theme-outline);
+        }
+      }
+    }
 
     // Responsive adjustments
     @media (max-width: 1200px) {
