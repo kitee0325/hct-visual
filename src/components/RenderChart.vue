@@ -8,10 +8,12 @@ import {
   onBeforeUnmount,
 } from 'vue';
 import { useThemeManager } from '../composables/useThemeManager';
+import { useThemeColors } from '../composables/useThemeColors';
 import * as echarts from 'echarts';
 
 // Use theme manager
-const { themeColorsRgba, lastUpdatedTimestamp } = useThemeManager();
+const { lastUpdatedTimestamp } = useThemeManager();
+const { themeColorsRgba } = useThemeColors();
 const chartContainerRef = ref(null);
 
 // Chart instances container
@@ -24,6 +26,21 @@ const radarChartRef = ref(null);
 const heatmapChartRef = ref(null);
 const mapChartRef = ref(null);
 const parallelChartRef = ref(null);
+
+// Function to clean up chart options by removing unnecessary configuration
+const cleanChartOptions = (option: any) => {
+  // Remove tooltip if it's set to not show
+  if (option.tooltip && option.tooltip.show === false) {
+    delete option.tooltip;
+  }
+
+  // Remove legend if it's set to not show
+  if (option.legend && option.legend.show === false) {
+    delete option.legend;
+  }
+
+  return option;
+};
 
 // Compute theme styles
 const chartStyles = computed(() => {
@@ -57,6 +74,12 @@ const getColorPalette = () => {
 // Area Chart (area-stack-gradient)
 const initAreaChart = () => {
   if (!areaChartRef.value) return;
+
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(areaChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
 
   const chart = echarts.init(areaChartRef.value);
   charts.value.push(chart);
@@ -225,12 +248,18 @@ const initAreaChart = () => {
     animation: false,
   };
 
-  chart.setOption(option);
+  chart.setOption(cleanChartOptions(option));
 };
 
 // Bar Chart (bar-stack-borderRadius)
 const initBarChart = () => {
   if (!barChartRef.value) return;
+
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(barChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
 
   const chart = echarts.init(barChartRef.value);
   charts.value.push(chart);
@@ -397,12 +426,18 @@ const initBarChart = () => {
     animation: false,
   };
 
-  chart.setOption(option);
+  chart.setOption(cleanChartOptions(option));
 };
 
 // Pie Chart (pie-roseType-simple)
 const initPieChart = () => {
   if (!pieChartRef.value) return;
+
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(pieChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
 
   const chart = echarts.init(pieChartRef.value);
   charts.value.push(chart);
@@ -449,12 +484,18 @@ const initPieChart = () => {
     animation: false,
   };
 
-  chart.setOption(option);
+  chart.setOption(cleanChartOptions(option));
 };
 
 // Scatter Chart (scatter-aqi-color)
 const initScatterChart = () => {
   if (!scatterChartRef.value) return;
+
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(scatterChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
 
   const chart = echarts.init(scatterChartRef.value);
   charts.value.push(chart);
@@ -588,10 +629,10 @@ const initScatterChart = () => {
       show: false,
     },
     grid: {
-      top: 0,
-      right: 0,
-      left: 0,
-      bottom: 0,
+      top: 30,
+      right: 20,
+      left: 20,
+      bottom: 20,
       containLabel: true,
     },
     tooltip: {
@@ -599,8 +640,6 @@ const initScatterChart = () => {
     },
     xAxis: {
       type: 'value',
-      name: 'AQI Index',
-      nameLocation: 'end',
       nameGap: 15,
       axisLabel: {
         show: false,
@@ -614,12 +653,13 @@ const initScatterChart = () => {
         lineStyle: {
           color: themeColorsRgba.value.props.outline,
         },
+      },
+      axisTick: {
+        show: false,
       },
     },
     yAxis: {
       type: 'value',
-      name: 'PM2.5',
-      nameLocation: 'end',
       nameGap: 15,
       axisLabel: {
         show: false,
@@ -633,6 +673,9 @@ const initScatterChart = () => {
         lineStyle: {
           color: themeColorsRgba.value.props.outline,
         },
+      },
+      axisTick: {
+        show: false,
       },
     },
     visualMap: {
@@ -707,35 +750,33 @@ const initScatterChart = () => {
     animation: false,
   };
 
-  chart.setOption(option);
+  chart.setOption(cleanChartOptions(option));
 };
 
 // Radar Chart (radar2)
 const initRadarChart = () => {
   if (!radarChartRef.value) return;
 
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(radarChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
+
   const chart = echarts.init(radarChartRef.value);
   charts.value.push(chart);
 
-  // Generate legend data
-  const legendData = [];
-  for (let i = 1; i <= 28; i++) {
-    legendData.push(i + 2000 + '');
-  }
+  // Initialize chart
 
   const option = {
     color: getColorPalette(),
-    legend: {
-      data: legendData,
-      show: false,
-    },
     radar: {
       indicator: [
-        { text: 'IE8-', max: 400 },
-        { text: 'IE9+', max: 400 },
-        { text: 'Safari', max: 400 },
-        { text: 'Firefox', max: 400 },
-        { text: 'Chrome', max: 400 },
+        { name: 'IE8-', max: 380 },
+        { name: 'IE9+', max: 380 },
+        { name: 'Safari', max: 380 },
+        { name: 'Firefox', max: 380 },
+        { name: 'Chrome', max: 380 },
       ],
       axisName: {
         color: themeColorsRgba.value.props.onSurfaceVariant,
@@ -757,6 +798,9 @@ const initRadarChart = () => {
         areaStyle: {
           color: ['rgba(255, 255, 255, 0.05)', 'rgba(0, 0, 0, 0.02)'],
         },
+      },
+      axisLabel: {
+        show: false,
       },
     },
     series: (function () {
@@ -793,12 +837,18 @@ const initRadarChart = () => {
     animation: false,
   };
 
-  chart.setOption(option);
+  chart.setOption(cleanChartOptions(option));
 };
 
 // Heatmap Chart (heatmap-large-piecewise)
 const initHeatmapChart = () => {
   if (!heatmapChartRef.value) return;
+
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(heatmapChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
 
   const chart = echarts.init(heatmapChartRef.value);
   charts.value.push(chart);
@@ -953,10 +1003,22 @@ const initHeatmapChart = () => {
     xAxis: {
       type: 'category',
       data: xData,
+      axisTick: {
+        show: false,
+      },
+      axisLabel: {
+        show: false,
+      },
     },
     yAxis: {
       type: 'category',
       data: yData,
+      axisTick: {
+        show: false,
+      },
+      axisLabel: {
+        show: false,
+      },
     },
     visualMap: {
       show: false,
@@ -999,12 +1061,18 @@ const initHeatmapChart = () => {
     ],
   };
 
-  chart.setOption(option);
+  chart.setOption(cleanChartOptions(option));
 };
 
 // USA Map Chart
 const initMapChart = async () => {
   if (!mapChartRef.value) return;
+
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(mapChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
 
   const chart = echarts.init(mapChartRef.value);
   charts.value.push(chart);
@@ -1070,7 +1138,6 @@ const initMapChart = async () => {
         {
           name: 'USA',
           type: 'map',
-          roam: true,
           map: 'USA',
           emphasis: {
             disabled: true,
@@ -1086,7 +1153,7 @@ const initMapChart = async () => {
       animation: false,
     };
 
-    chart.setOption(option);
+    chart.setOption(cleanChartOptions(option));
   } catch (error) {
     console.error('Error initializing USA map chart:', error);
   }
@@ -1095,6 +1162,12 @@ const initMapChart = async () => {
 // Parallel Chart
 const initParallelChart = () => {
   if (!parallelChartRef.value) return;
+
+  // Dispose any existing chart on this element
+  const existingChart = echarts.getInstanceByDom(parallelChartRef.value);
+  if (existingChart) {
+    existingChart.dispose();
+  }
 
   const chart = echarts.init(parallelChartRef.value);
   charts.value.push(chart);
@@ -1229,13 +1302,8 @@ const initParallelChart = () => {
     parallelAxis: [
       {
         dim: 0,
-        name: schema[0].text,
         inverse: true,
         max: 31,
-        nameLocation: 'start',
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1247,15 +1315,11 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
       {
         dim: 1,
-        name: schema[1].text,
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1267,15 +1331,11 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
       {
         dim: 2,
-        name: schema[2].text,
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1287,15 +1347,11 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
       {
         dim: 3,
-        name: schema[3].text,
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1307,15 +1363,11 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
       {
         dim: 4,
-        name: schema[4].text,
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1327,15 +1379,11 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
       {
         dim: 5,
-        name: schema[5].text,
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1347,15 +1395,11 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
       {
         dim: 6,
-        name: schema[6].text,
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1367,17 +1411,13 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
       {
         dim: 7,
-        name: schema[7].text,
         type: 'category',
         data: ['优', '良', '轻度污染', '中度污染', '重度污染', '严重污染'],
-        nameTextStyle: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
-        },
         axisLine: {
           lineStyle: {
             color: themeColorsRgba.value.props.outline,
@@ -1389,7 +1429,7 @@ const initParallelChart = () => {
           },
         },
         axisLabel: {
-          color: themeColorsRgba.value.props.onSurfaceVariant,
+          show: false,
         },
       },
     ],
@@ -1447,7 +1487,7 @@ const initParallelChart = () => {
     animation: false,
   };
 
-  chart.setOption(option);
+  chart.setOption(cleanChartOptions(option));
 };
 
 // Initialize all charts
@@ -1458,15 +1498,18 @@ const initCharts = () => {
   });
   charts.value = [];
 
+  // Use setTimeout with nextTick to ensure DOM is fully updated before initializing charts
   nextTick(() => {
-    initAreaChart();
-    initBarChart();
-    initPieChart();
-    initScatterChart();
-    initRadarChart();
-    initHeatmapChart();
-    initMapChart();
-    initParallelChart();
+    setTimeout(() => {
+      initAreaChart();
+      initBarChart();
+      initPieChart();
+      initScatterChart();
+      initRadarChart();
+      initHeatmapChart();
+      initMapChart();
+      initParallelChart();
+    }, 0);
   });
 };
 

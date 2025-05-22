@@ -1,12 +1,13 @@
 import { computed, watch } from 'vue';
 import { useThemeManager } from './useThemeManager';
+import { useThemeColors } from './useThemeColors';
 
 /**
  * 将主题颜色映射到 Element Plus 的 CSS 变量
  */
 export function useElementTheme() {
   // 获取主题管理器提供的颜色
-  const { themeColorsRgba, isDarkMode } = useThemeManager();
+  const { themeColorsRgba, isDarkMode } = useThemeColors();
 
   // 计算 Element Plus 需要的变量映射
   const elementCssVars = computed(() => {

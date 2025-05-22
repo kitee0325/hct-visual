@@ -7,9 +7,10 @@ import chromaLabelImg from '@/assets/chroma-label.svg';
 import hueLabelImg from '@/assets/hue-label.svg';
 import toneLabelImg from '@/assets/tone-label.svg';
 import { useThemeManager } from '../composables/useThemeManager';
+import { useThemeColors } from '../composables/useThemeColors';
 
 // 使用主题管理器共享的主题颜色状态
-const { themeColorsRgba, isDarkMode } = useThemeManager();
+const { themeColors, themeColorsRgba, isDarkMode } = useThemeColors();
 
 const containerRef = ref<HTMLElement | null>(null);
 const isAutoRotating = ref(true);

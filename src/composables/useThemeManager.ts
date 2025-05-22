@@ -200,13 +200,6 @@ export function useThemeManager() {
   }
 
   return {
-    // 从useThemeColors中导出的基础功能
-    themeColors,
-    themeColorsRgba,
-    isDarkMode,
-    toggleDarkMode,
-    updateThemeColors,
-
     // 新增的功能
     currentTheme,
     lastUpdatedTimestamp,

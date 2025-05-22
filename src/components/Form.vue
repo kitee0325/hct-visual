@@ -10,11 +10,12 @@ import {
 } from '@material/material-color-utilities';
 import { parseColorToArgb } from '../tools/color';
 import { useThemeManager } from '../composables/useThemeManager';
+import { useThemeColors } from '../composables/useThemeColors';
 import { useElementTheme } from '../composables/useElementTheme';
 
 // 使用主题管理器
-const { themeColorsRgba, isDarkMode, toggleDarkMode, applyTheme } =
-  useThemeManager();
+const { themeColorsRgba, isDarkMode, toggleDarkMode } = useThemeColors();
+const { applyTheme } = useThemeManager();
 
 // 初始化 Element Plus 主题映射
 const { applyElementTheme } = useElementTheme();
