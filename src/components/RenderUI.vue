@@ -11,7 +11,7 @@ import {
 } from '@element-plus/icons-vue';
 
 // Using theme manager
-const { themeColorsRgba, isDarkMode, getThemeStyles } = useThemeManager();
+const { getThemeStyles } = useThemeManager();
 
 // Calculate theme styles for components
 const themeStyles = computed(() => {

@@ -41,20 +41,28 @@ export function parseColorToArgb(color: string): number {
 export function transformSchemeToRgba(scheme: any): any {
   const result: any = {};
 
-  for (const key in scheme) {
-    if (typeof scheme[key] === 'object' && scheme[key] !== null) {
-      result[key] = transformSchemeToRgba(scheme[key]);
-    } else if (typeof scheme[key] === 'number') {
-      // If it's a number, assume it's an ARGB color value and convert to RGBA string
-      result[key] = getColorFromArgb(scheme[key]);
-    } else {
-      result[key] = scheme[key];
+  // 如果是 Scheme 对象，从 props 中获取颜色值
+  if (scheme && typeof scheme === 'object' && 'props' in scheme) {
+    for (const key in scheme.props) {
+      if (typeof scheme.props[key] === 'number') {
+        result[key] = getColorFromArgb(scheme.props[key]);
+      }
+    }
+  } else {
+    // 处理普通对象
+    for (const key in scheme) {
+      if (typeof scheme[key] === 'object' && scheme[key] !== null) {
+        result[key] = transformSchemeToRgba(scheme[key]);
+      } else if (typeof scheme[key] === 'number') {
+        result[key] = getColorFromArgb(scheme[key]);
+      } else {
+        result[key] = scheme[key];
+      }
     }
   }
 
   // 添加props属性用于模板中的v-for循环
   if (!result.props) {
-    // 复制顶层颜色值到props属性中，排除不是颜色的属性
     result.props = {};
     for (const key in result) {
       if (

@@ -1,7 +1,19 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watchEffect, computed } from 'vue';
+import {
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  watchEffect,
+  computed,
+  watch,
+} from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass';
 import { Hct } from '@material/material-color-utilities';
 import chromaLabelImg from '@/assets/chroma-label.svg';
 import hueLabelImg from '@/assets/hue-label.svg';
@@ -19,6 +31,13 @@ interface ThemeColorHct {
   tone: number;
 }
 
+interface SchemeProps {
+  props: {
+    [key: string]: number;
+  };
+  toJSON: () => Record<string, unknown>;
+}
+
 const themeColorsHct = computed<ThemeColorHct[]>(() => {
   const result: ThemeColorHct[] = [];
   const currentTheme = isDarkMode.value
@@ -27,15 +46,16 @@ const themeColorsHct = computed<ThemeColorHct[]>(() => {
 
   if (!currentTheme) return [];
 
-  Object.entries(currentTheme).forEach(([id, value]) => {
+  const scheme = currentTheme as unknown as SchemeProps;
+  if (!scheme.props) return [];
+
+  Object.entries(scheme.props).forEach(([id, value]) => {
     // 跳过非颜色属性
     if (id === 'toJSON' || typeof value !== 'number') {
       return;
     }
-
-    // 将ARGB转换为HCT
+    // ARGB转HCT
     const hctColor = Hct.fromInt(value);
-
     result.push({
       id,
       hue: hctColor.hue,
@@ -43,7 +63,6 @@ const themeColorsHct = computed<ThemeColorHct[]>(() => {
       tone: hctColor.tone,
     });
   });
-
   return result;
 });
 
@@ -57,28 +76,79 @@ let controls: OrbitControls;
 let instancedMesh: THREE.InstancedMesh;
 let sphereGeometry: THREE.SphereGeometry;
 let material: THREE.MeshStandardMaterial;
+let themeSphereGeometry: THREE.SphereGeometry;
 let autoRotateTimeout: number | null = null;
 let animationFrameId: number | null = null;
 let themeColorSpheres: THREE.Mesh[] = [];
+let hctContainer: THREE.Group;
+let pointCloudContainer: THREE.Group;
+let themeSpheresContainer: THREE.Group;
 const INACTIVITY_TIMEOUT = 2000;
 const initialCameraPosition = { x: 100, y: 50, z: 100 };
 
-// 更新场景背景色的函数
+// Bloom常量
+const BLOOM_SCENE = 1;
+const bloomLayer = new THREE.Layers();
+bloomLayer.set(BLOOM_SCENE);
+
+// Bloom参数，随主题切换
+const bloomParams = computed(() => {
+  if (isDarkMode.value) {
+    return {
+      toneMapping: THREE.ACESFilmicToneMapping,
+      toneMappingExposure: 1.0,
+      threshold: 0.05,
+      strength: 1.0,
+      radius: 0.4,
+      ambientIntensity: 1.2,
+      directionalIntensity: 1.5,
+    };
+  } else {
+    return {
+      toneMapping: THREE.NoToneMapping,
+      toneMappingExposure: 1.0,
+      threshold: 0.15,
+      strength: 0.4,
+      radius: 0.4,
+      ambientIntensity: 1.2,
+      directionalIntensity: 1.5,
+    };
+  }
+});
+
+const darkMaterial = new THREE.MeshBasicMaterial({ color: 'black' });
+const materials: Record<string, THREE.Material> = {};
+
+// 后处理相关
+let bloomComposer: EffectComposer;
+let finalComposer: EffectComposer;
+
+// Bloom合成shader
+const vertexShader = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+
+const fragmentShader = `
+uniform sampler2D baseTexture;
+uniform sampler2D bloomTexture;
+uniform float bloomStrength;
+varying vec2 vUv;
+void main() {
+  vec4 base = texture2D(baseTexture, vUv);
+  vec4 bloom = texture2D(bloomTexture, vUv);
+  gl_FragColor = vec4(mix(base.rgb, bloom.rgb, bloomStrength), base.a);
+}
+`;
+
+// 更新场景背景色
 const updateSceneBackground = () => {
-  if (!scene) return;
-
-  // 使用主题变量获取背景色
-  const bgColor = isDarkMode.value
-    ? getComputedStyle(document.documentElement)
-        .getPropertyValue('--theme-background')
-        .trim()
-    : getComputedStyle(document.documentElement)
-        .getPropertyValue('--theme-background')
-        .trim();
-
-  scene.background = new THREE.Color(bgColor || '#121212');
-
-  // 同时确保容器背景色也被更新
+  const bgColor = getComputedStyle(document.documentElement)
+    .getPropertyValue('--theme-background')
+    .trim();
   if (containerRef.value) {
     containerRef.value.style.backgroundColor = bgColor || '#121212';
   }
@@ -86,28 +156,24 @@ const updateSceneBackground = () => {
 
 const initThree = () => {
   if (!containerRef.value) return;
-
-  // 检查CSS变量是否已正确应用
-  const computedStyle = getComputedStyle(document.documentElement);
-  const surfaceColor = computedStyle.getPropertyValue('--theme-surface').trim();
-
-  // 创建渲染器
+  themeSphereGeometry = new THREE.SphereGeometry(1, 6, 4);
   renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: 'high-performance',
+    alpha: true,
   });
+  renderer.setClearColor(0x000000, 0);
   renderer.setSize(
     containerRef.value.clientWidth,
     containerRef.value.clientHeight
   );
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = bloomParams.value.toneMapping;
+  renderer.toneMappingExposure = bloomParams.value.toneMappingExposure;
   containerRef.value.appendChild(renderer.domElement);
-
-  // 创建场景
   scene = new THREE.Scene();
+  scene.layers.set(0);
   updateSceneBackground();
-
-  // 创建相机
   camera = new THREE.PerspectiveCamera(
     75,
     containerRef.value.clientWidth / containerRef.value.clientHeight,
@@ -119,41 +185,96 @@ const initThree = () => {
     initialCameraPosition.y,
     initialCameraPosition.z
   );
-
-  // 创建控制器
+  camera.layers.enableAll();
   controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.target.set(0, 50, 0);
-
-  // 统一事件处理
   addEventListeners();
-
-  // 添加光照
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+  const ambientLight = new THREE.AmbientLight(
+    0xffffff,
+    bloomParams.value.ambientIntensity
+  );
   scene.add(ambientLight);
-  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  const directionalLight = new THREE.DirectionalLight(
+    0xffffff,
+    bloomParams.value.directionalIntensity
+  );
   directionalLight.position.set(1, 1, 1).normalize();
   scene.add(directionalLight);
-
-  // 创建HCT色彩空间可视化
+  setupPostProcessing();
   createHctVisualization();
-
-  // 开启动画循环
   animate();
+  watchEffect(() => {
+    if (!renderer || !scene || !bloomComposer) {
+      return;
+    }
+    const currentParams = bloomParams.value;
+    renderer.toneMapping = currentParams.toneMapping;
+    renderer.toneMappingExposure = currentParams.toneMappingExposure;
+    scene.children.forEach((child) => {
+      if (child instanceof THREE.AmbientLight) {
+        child.intensity = currentParams.ambientIntensity;
+      } else if (child instanceof THREE.DirectionalLight) {
+        child.intensity = currentParams.directionalIntensity;
+      }
+    });
+    const bloomPassInstance = bloomComposer.passes[1] as UnrealBloomPass;
+    if (bloomPassInstance && bloomPassInstance instanceof UnrealBloomPass) {
+      bloomPassInstance.threshold = currentParams.threshold;
+      bloomPassInstance.strength = currentParams.strength;
+      bloomPassInstance.radius = currentParams.radius;
+    }
+    updateSceneBackground();
+  });
 };
 
-// 添加事件监听器
+// 后处理效果
+const setupPostProcessing = () => {
+  if (!containerRef.value) return;
+  const width = containerRef.value.clientWidth;
+  const height = containerRef.value.clientHeight;
+  const renderScene = new RenderPass(scene, camera);
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(width, height),
+    bloomParams.value.strength,
+    bloomParams.value.radius,
+    bloomParams.value.threshold
+  );
+  bloomComposer = new EffectComposer(renderer);
+  bloomComposer.renderToScreen = false;
+  bloomComposer.addPass(renderScene);
+  bloomComposer.addPass(bloomPass);
+  const mixPass = new ShaderPass(
+    new THREE.ShaderMaterial({
+      uniforms: {
+        baseTexture: { value: null },
+        bloomTexture: { value: bloomComposer.renderTarget2.texture },
+        bloomStrength: { value: 0.7 },
+      },
+      vertexShader: vertexShader,
+      fragmentShader: fragmentShader,
+      defines: {},
+    }),
+    'baseTexture'
+  );
+  mixPass.needsSwap = true;
+  const outputPass = new OutputPass();
+  finalComposer = new EffectComposer(renderer);
+  finalComposer.addPass(renderScene);
+  finalComposer.addPass(mixPass);
+  finalComposer.addPass(outputPass);
+};
+
+// 事件监听
 const addEventListeners = () => {
   if (!containerRef.value) return;
-
   const events = [
     { name: 'mousemove', handler: handleUserInteraction },
     { name: 'touchmove', handler: handleUserInteraction },
     { name: 'mousedown', handler: handleUserInteraction },
     { name: 'touchstart', handler: handleUserInteraction },
   ];
-
   events.forEach((event) => {
     containerRef.value?.addEventListener(event.name, event.handler, {
       passive: true,
@@ -161,33 +282,25 @@ const addEventListeners = () => {
   });
 };
 
-// 移除事件监听器
 const removeEventListeners = () => {
   if (!containerRef.value) return;
-
   const events = [
     { name: 'mousemove', handler: handleUserInteraction },
     { name: 'touchmove', handler: handleUserInteraction },
     { name: 'mousedown', handler: handleUserInteraction },
     { name: 'touchstart', handler: handleUserInteraction },
   ];
-
   events.forEach((event) => {
     containerRef.value?.removeEventListener(event.name, event.handler);
   });
 };
 
-// 处理用户交互 - 简化后的防抖逻辑
+// 用户交互防抖
 const handleUserInteraction = () => {
-  // 停止自转
   isAutoRotating.value = false;
-
-  // 清除之前的定时器
   if (autoRotateTimeout !== null) {
     clearTimeout(autoRotateTimeout);
   }
-
-  // 设置新的定时器，超时后恢复自转和重置相机
   autoRotateTimeout = window.setTimeout(() => {
     isAutoRotating.value = true;
     resetCameraPosition();
@@ -196,100 +309,75 @@ const handleUserInteraction = () => {
 
 const resetCameraPosition = () => {
   if (!camera) return;
-
-  // 记录当前位置
   const startPosition = camera.position.clone();
   const startTime = performance.now();
-  const duration = 1000; // 1秒过渡时间
-
+  const duration = 1000;
   const animateCamera = (currentTime: number) => {
     const elapsed = currentTime - startTime;
-
     if (elapsed < duration) {
-      // 计算平滑插值因子
       const t = elapsed / duration;
-      const smoothT = 1 - Math.pow(1 - t, 3); // 使用缓出立方函数
-
-      // 平滑插值相机位置
+      const smoothT = 1 - Math.pow(1 - t, 3);
       camera.position.x =
         startPosition.x + (initialCameraPosition.x - startPosition.x) * smoothT;
       camera.position.y =
         startPosition.y + (initialCameraPosition.y - startPosition.y) * smoothT;
       camera.position.z =
         startPosition.z + (initialCameraPosition.z - startPosition.z) * smoothT;
-
-      // 继续动画
       requestAnimationFrame(animateCamera);
     } else {
-      // 确保相机最终位置准确
       camera.position.set(
         initialCameraPosition.x,
         initialCameraPosition.y,
         initialCameraPosition.z
       );
     }
-
-    // 更新相机朝向
     camera.lookAt(controls.target);
   };
-
-  // 开始相机动画
   requestAnimationFrame(animateCamera);
 };
 
 const createHctVisualization = () => {
-  // 采样参数
+  hctContainer = new THREE.Group();
+  scene.add(hctContainer);
+  pointCloudContainer = new THREE.Group();
+  themeSpheresContainer = new THREE.Group();
+  hctContainer.add(pointCloudContainer);
+  hctContainer.add(themeSpheresContainer);
   const toneSamples = 36;
   const chromaLevels = 36;
   const basePointsPerCircle = 6;
-
-  // 估算实例数
   const maxEstimatedInstances =
     toneSamples * chromaLevels * (chromaLevels * basePointsPerCircle);
-
-  // 创建实例化网格几何体和材质
   sphereGeometry = new THREE.SphereGeometry(1, 6, 4);
   material = new THREE.MeshStandardMaterial({
     roughness: 0.7,
     metalness: 0.2,
   });
-
   instancedMesh = new THREE.InstancedMesh(
     sphereGeometry,
     material,
     maxEstimatedInstances
   );
-
-  // 临时对象，避免重复创建
+  instancedMesh.layers.set(0);
   const tempMatrix = new THREE.Matrix4();
   const tempColor = new THREE.Color();
   let instanceIndex = 0;
-
-  // 对于每个亮度值，创建一个水平截面
   for (let toneIndex = 0; toneIndex < toneSamples; toneIndex++) {
     const tone = (toneIndex / (toneSamples - 1)) * 100;
-
-    // 纯黑色和纯白色的特殊处理
     const isExtremeTone =
       Math.abs(tone) < 0.001 || Math.abs(tone - 100) < 0.001;
-
     if (isExtremeTone) {
-      // 对于极端亮度值，只添加一个中心点
       const hctColor = Hct.from(0, 0, tone);
       const argb = hctColor.toInt();
       tempColor.setHex(argb & 0x00ffffff);
-
       tempMatrix.setPosition(0, tone, 0);
       instancedMesh.setMatrixAt(instanceIndex, tempMatrix);
       instancedMesh.setColorAt(instanceIndex, tempColor);
       instanceIndex++;
       continue;
     }
-
-    // 计算此亮度下的HCT色彩空间最大包络
     const hueResolution = 36;
     const envelope = [];
-
     for (let hueIndex = 0; hueIndex < hueResolution; hueIndex++) {
       const hueDegrees = (hueIndex / hueResolution) * 360;
       const hctForMaxChroma = Hct.from(hueDegrees, 200, tone);
@@ -298,34 +386,23 @@ const createHctVisualization = () => {
         maxChroma: hctForMaxChroma.chroma,
       });
     }
-
-    // 对每个彩度层次（同心圆）
     for (let chromaLevel = 0; chromaLevel < chromaLevels; chromaLevel++) {
       const normalizedRadius = chromaLevel / (chromaLevels - 1);
       const targetChroma = 150 * normalizedRadius;
-
-      // 点的数量随半径增加
       const pointsOnCircle = basePointsPerCircle * (chromaLevel + 1);
-
-      // 在当前圆周上均匀分布点
       for (let pointIndex = 0; pointIndex < pointsOnCircle; pointIndex++) {
         if (instanceIndex >= maxEstimatedInstances) break;
-
         const hueAngle = (pointIndex / pointsOnCircle) * 360;
         const hueRadians = THREE.MathUtils.degToRad(hueAngle);
-
-        // 通过插值计算当前角度的最大彩度
         let maxChromaAtHue = 0;
         for (let i = 0; i < envelope.length; i++) {
           const currentHue = envelope[i].hueDegrees;
           const nextHue = envelope[(i + 1) % envelope.length].hueDegrees;
-
           if (
             (hueAngle >= currentHue && hueAngle < nextHue) ||
             (i === envelope.length - 1 &&
               (hueAngle >= currentHue || hueAngle < nextHue))
           ) {
-            // 线性插值获取最大彩度
             const ratio =
               nextHue > currentHue
                 ? (hueAngle - currentHue) / (nextHue - currentHue)
@@ -336,31 +413,19 @@ const createHctVisualization = () => {
             break;
           }
         }
-
-        // 如果请求的彩度超过了最大彩度，跳过这个点
         if (targetChroma > maxChromaAtHue) {
           continue;
         }
-
-        // 创建HCT颜色
         const hctColor = Hct.from(hueAngle, targetChroma, tone);
         const actualChroma = hctColor.chroma;
-
-        // 如果HCT色彩空间中不存在这个点，则跳过
         if (Math.abs(actualChroma - targetChroma) > 5) {
           continue;
         }
-
-        // 获取RGB颜色
         const argb = hctColor.toInt();
         tempColor.setHex(argb & 0x00ffffff);
-
-        // 计算3D坐标
         const x = actualChroma * Math.cos(hueRadians);
         const y = tone;
         const z = actualChroma * Math.sin(hueRadians);
-
-        // 直接设置实例矩阵和颜色
         tempMatrix.setPosition(x, y, z);
         instancedMesh.setMatrixAt(instanceIndex, tempMatrix);
         instancedMesh.setColorAt(instanceIndex, tempColor);
@@ -368,107 +433,174 @@ const createHctVisualization = () => {
       }
     }
   }
-
-  // 更新实例数量
   instancedMesh.count = instanceIndex;
-
-  // 更新矩阵和颜色
   instancedMesh.instanceMatrix.needsUpdate = true;
   if (instancedMesh.instanceColor) {
     instancedMesh.instanceColor.needsUpdate = true;
   }
-
-  scene.add(instancedMesh);
-
-  // Add theme color spheres
+  pointCloudContainer.add(instancedMesh);
   updateThemeColorSpheres();
 };
 
-// Function to update theme color spheres
+// 主题色小球原始材质缓存
+const themeSphereOriginalMaterials: THREE.Material[] = [];
+
+// 主题色小球更新
 const updateThemeColorSpheres = () => {
   if (!scene) return;
-
-  // Remove existing theme color spheres
-  themeColorSpheres.forEach((sphere) => {
-    scene.remove(sphere);
-    sphere.geometry.dispose();
-    (sphere.material as THREE.Material).dispose();
-  });
-  themeColorSpheres = [];
-
-  // Create new spheres for each theme color - matching point cloud size exactly
-  const themeGeometry = new THREE.SphereGeometry(1, 6, 4); // Same size as point cloud
-
-  themeColorsHct.value.forEach((color) => {
-    // 创建原始颜色和适配颜色（如果需要）
-    let finalHue = color.hue;
-    let finalChroma = color.chroma;
-    let finalTone = color.tone;
-
-    // Use the same position calculation logic as in createHctVisualization
+  const colors = themeColorsHct.value;
+  while (themeColorSpheres.length < colors.length) {
+    const material = new THREE.MeshStandardMaterial();
+    const sphere = new THREE.Mesh(themeSphereGeometry, material);
+    sphere.layers.set(BLOOM_SCENE);
+    themeSpheresContainer.add(sphere);
+    themeColorSpheres.push(sphere);
+    themeSphereOriginalMaterials.push(material);
+  }
+  while (themeColorSpheres.length > colors.length) {
+    const sphere = themeColorSpheres.pop();
+    if (sphere) {
+      themeSpheresContainer.remove(sphere);
+      sphere.geometry.dispose();
+      (sphere.material as THREE.Material).dispose();
+      themeSphereOriginalMaterials.pop();
+    }
+  }
+  colors.forEach((color, i) => {
+    const finalHue = color.hue;
+    const finalChroma = color.chroma;
+    const finalTone = color.tone;
     const hueRadians = THREE.MathUtils.degToRad(finalHue);
     const x = finalChroma * Math.cos(hueRadians);
     const y = finalTone;
     const z = finalChroma * Math.sin(hueRadians);
-
-    // Create material with the theme color - matching point cloud material exactly
     const colorInt = Hct.from(finalHue, finalChroma, finalTone).toInt();
-    const material = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(colorInt & 0x00ffffff),
-      roughness: 0.7,
-      metalness: 0.2,
-    });
-
-    // Create the sphere mesh
-    const sphere = new THREE.Mesh(themeGeometry, material);
-    sphere.position.set(x, y, z);
-
-    // Add to scene and store reference
-    scene.add(sphere);
-    themeColorSpheres.push(sphere);
+    const mesh = themeColorSpheres[i];
+    mesh.position.set(x, y, z);
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    const rgb = colorInt & 0x00ffffff;
+    mat.color.setHex(rgb);
+    mat.emissive.setHex(rgb);
+    mat.roughness = 0.7;
+    mat.metalness = 0.2;
+    mat.emissiveIntensity = 0.0; // 主 pass 不发光
+    mat.needsUpdate = true;
   });
+  pointCloudContainer.position.set(0, 0, 0);
+  themeSpheresContainer.position.set(0, 0, 0);
+  themeSpheresContainer.renderOrder = 1;
+  pointCloudContainer.renderOrder = 0;
+  pointCloudContainer.layers.set(0);
+  themeSpheresContainer.layers.set(BLOOM_SCENE);
+};
+
+// --- Bloom pass 前后切换主题色小球材质 ---
+function setThemeSpheresBloomMaterial() {
+  const colors = themeColorsHct.value;
+  themeColorSpheres.forEach((mesh, i) => {
+    const color = colors[i];
+    if (!color) return;
+    const finalHue = color.hue;
+    const finalChroma = color.chroma;
+    const finalTone = color.tone;
+    const colorInt = Hct.from(finalHue, finalChroma, finalTone).toInt();
+    const rgb = colorInt & 0x00ffffff;
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    mat.color.setHex(rgb);
+    mat.emissive.setHex(rgb);
+    mat.emissiveIntensity = 2.0;
+    mat.needsUpdate = true;
+  });
+}
+function restoreThemeSpheresMaterial() {
+  const colors = themeColorsHct.value;
+  themeColorSpheres.forEach((mesh, i) => {
+    const color = colors[i];
+    if (!color) return;
+    const finalHue = color.hue;
+    const finalChroma = color.chroma;
+    const finalTone = color.tone;
+    const colorInt = Hct.from(finalHue, finalChroma, finalTone).toInt();
+    const rgb = colorInt & 0x00ffffff;
+    const mat = mesh.material as THREE.MeshStandardMaterial;
+    mat.color.setHex(rgb);
+    mat.emissive.setHex(rgb);
+    mat.emissiveIntensity = 0.0;
+    mat.needsUpdate = true;
+  });
+}
+
+// 非Bloom层物体变暗
+const darkenNonBloomed = (obj: THREE.Object3D) => {
+  if (obj.type !== 'Mesh' && !(obj instanceof THREE.Mesh)) return;
+  const mesh = obj as THREE.Mesh;
+  if (bloomLayer.test(mesh.layers)) return;
+  if (mesh.material) {
+    materials[mesh.uuid] = Array.isArray(mesh.material)
+      ? mesh.material[0]
+      : mesh.material;
+    mesh.material = darkMaterial;
+  }
+};
+
+// 恢复原材质
+const restoreMaterial = (obj: THREE.Object3D) => {
+  if (materials[obj.uuid]) {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.material) {
+      mesh.material = materials[obj.uuid];
+      delete materials[obj.uuid];
+    }
+  }
 };
 
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
-
-  // 只有在自转状态下才旋转点云
-  if (isAutoRotating.value && instancedMesh) {
-    instancedMesh.rotateY(0.002);
+  if (isAutoRotating.value && hctContainer) {
+    hctContainer.rotateY(0.002);
   }
-
   controls.update();
-  renderer.render(scene, camera);
+  if (bloomComposer && finalComposer) {
+    camera.layers.set(BLOOM_SCENE);
+    setThemeSpheresBloomMaterial(); // bloom pass 前切换材质
+    scene.traverse(darkenNonBloomed);
+    bloomComposer.render();
+    scene.traverse(restoreMaterial);
+    restoreThemeSpheresMaterial(); // bloom pass 后恢复材质
+    camera.layers.set(0);
+    finalComposer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 };
 
 const handleResize = () => {
   if (!containerRef.value) return;
-
   const width = containerRef.value.clientWidth;
   const height = containerRef.value.clientHeight;
-
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-
   renderer.setSize(width, height);
+  if (bloomComposer && finalComposer) {
+    bloomComposer.setSize(width, height);
+    finalComposer.setSize(width, height);
+  }
 };
 
 onMounted(() => {
-  // 初始化Three.js
   initThree();
   window.addEventListener('resize', handleResize, { passive: true });
-
-  // Add theme colors watch effect
-  watchEffect(() => {
-    if (scene && themeColorsHct.value.length > 0) {
-      updateThemeColorSpheres();
-    }
-  });
-
-  // Watch for theme mode changes
+  watch(
+    () => themeColors.value,
+    (newThemeColors) => {
+      if (scene && newThemeColors) {
+        updateThemeColorSpheres();
+      }
+    },
+    { deep: true, immediate: true }
+  );
   watchEffect(() => {
     if (scene && themeColorsRgba.value) {
-      // 显式引用isDarkMode.value以确保正确收集依赖
       const currentMode = isDarkMode.value;
       updateSceneBackground();
     }
@@ -477,42 +609,41 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleResize);
-
-  // 清除防抖定时器
   if (autoRotateTimeout !== null) {
     clearTimeout(autoRotateTimeout);
   }
-
-  // 取消动画帧
   if (animationFrameId !== null) {
     cancelAnimationFrame(animationFrameId);
   }
-
-  // 移除事件监听器
   removeEventListeners();
-
-  // Clean up theme color spheres
   themeColorSpheres.forEach((sphere) => {
-    scene.remove(sphere);
+    themeSpheresContainer.remove(sphere);
     sphere.geometry.dispose();
     (sphere.material as THREE.Material).dispose();
   });
   themeColorSpheres = [];
-
-  // 释放Three.js资源
   if (instancedMesh) {
-    scene.remove(instancedMesh);
+    pointCloudContainer.remove(instancedMesh);
     instancedMesh.dispose();
   }
-
+  if (pointCloudContainer) {
+    hctContainer.remove(pointCloudContainer);
+  }
+  if (themeSpheresContainer) {
+    hctContainer.remove(themeSpheresContainer);
+  }
+  if (hctContainer) {
+    scene.remove(hctContainer);
+  }
   if (sphereGeometry) sphereGeometry.dispose();
+  if (themeSphereGeometry) themeSphereGeometry.dispose();
   if (material) material.dispose();
-
+  if (bloomComposer) bloomComposer.dispose();
+  if (finalComposer) finalComposer.dispose();
   if (renderer && containerRef.value) {
     containerRef.value.removeChild(renderer.domElement);
     renderer.dispose();
   }
-
   if (controls) controls.dispose();
 });
 </script>
@@ -534,9 +665,7 @@ onBeforeUnmount(() => {
 $border-radius-sm: 8px;
 $border-radius-md: 12px;
 $border-radius-lg: 16px;
-$box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 $transition-base: all 0.3s ease;
-$border-color: #d9d9d9;
 
 // 直接使用全局主题变量
 .hct {
@@ -544,7 +673,7 @@ $border-color: #d9d9d9;
   height: 100%;
   position: relative;
   overflow: hidden;
-  background-color: var(--theme-surface);
+  background-color: var(--theme-background);
   border-radius: $border-radius-lg;
   box-shadow: var(--theme-box-shadow-light);
   transition: $transition-base;
