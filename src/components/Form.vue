@@ -661,8 +661,26 @@ $border-color: #d9d9d9;
           box-shadow: var(--theme-box-shadow-light);
           position: relative;
           cursor: pointer;
-          @include hover-lift;
-          @include checkerboard-bg;
+          transition: all 0.3s ease;
+
+          &::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            border: 2px solid var(--theme-primary);
+            opacity: 0;
+            transition: all 0.3s ease;
+          }
+
+          &:hover {
+            transform: scale(1.05);
+
+            &::after {
+              opacity: 1;
+              box-shadow: 0 0 0 4px var(--theme-primary-light);
+            }
+          }
         }
       }
     }

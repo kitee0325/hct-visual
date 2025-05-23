@@ -59,7 +59,25 @@ const getColorPalette = () => {
   const colors = themeColorsRgba.value;
   if (!colors || !colors.props) return [];
 
-  return [
+  // Helper function to calculate color difference (using simple RGB distance)
+  const getColorDifference = (color1: string, color2: string) => {
+    const getRGB = (color: string) => {
+      const match = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (!match) return [0, 0, 0];
+      return [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
+    };
+
+    const [r1, g1, b1] = getRGB(color1);
+    const [r2, g2, b2] = getRGB(color2);
+
+    // Calculate Euclidean distance in RGB space
+    return Math.sqrt(
+      Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2)
+    );
+  };
+
+  // Get all available colors from the theme
+  const availableColors = [
     colors.props.primary,
     colors.props.secondary,
     colors.props.tertiary,
@@ -69,6 +87,49 @@ const getColorPalette = () => {
     colors.props.tertiaryContainer,
     colors.props.errorContainer,
   ];
+
+  const backgroundColor = colors.surface || colors.props.surface;
+  const MIN_BACKGROUND_DIFFERENCE = 100; // Minimum difference from background color
+  const MIN_ADJACENT_DIFFERENCE = 80; // Minimum difference between adjacent colors
+
+  // Filter colors that are too similar to background
+  const nonBackgroundColors = availableColors.filter(
+    (color) =>
+      getColorDifference(color, backgroundColor) > MIN_BACKGROUND_DIFFERENCE
+  );
+
+  // Build optimized palette
+  const optimizedPalette: string[] = [];
+  for (const color of nonBackgroundColors) {
+    // If this is the first color, or if it's different enough from the last color
+    if (
+      optimizedPalette.length === 0 ||
+      getColorDifference(color, optimizedPalette[optimizedPalette.length - 1]) >
+        MIN_ADJACENT_DIFFERENCE
+    ) {
+      optimizedPalette.push(color);
+    }
+  }
+
+  // If we don't have enough colors, add some high-contrast combinations
+  if (optimizedPalette.length < 4) {
+    if (!optimizedPalette.includes(colors.props.error)) {
+      optimizedPalette.push(colors.props.error);
+    }
+    if (!optimizedPalette.includes(colors.props.tertiary)) {
+      optimizedPalette.push(colors.props.tertiary);
+    }
+  }
+
+  // Ensure we have at least some colors to work with
+  return optimizedPalette.length > 0
+    ? optimizedPalette
+    : [
+        colors.props.error,
+        colors.props.tertiary,
+        colors.props.primary,
+        colors.props.secondary,
+      ];
 };
 
 // Area Chart (area-stack-gradient)
