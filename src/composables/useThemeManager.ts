@@ -1,5 +1,5 @@
 import { ref, computed, watchEffect } from 'vue';
-import { type Scheme } from '@material/material-color-utilities';
+import { type Scheme, argbFromRgb } from '@material/material-color-utilities';
 import { useThemeColors } from './useThemeColors';
 
 // 创建一个单例模式的主题管理器
@@ -7,6 +7,8 @@ let isInitialized = false;
 
 // 以下变量会被所有组件共享
 const lastUpdatedTimestamp = ref(Date.now());
+
+export type ThemeScheme = Record<string, number>;
 
 /**
  * 主题管理器组合式函数
@@ -26,7 +28,7 @@ export function useThemeManager() {
   // 用于组件的主题样式计算
   const getThemeStyles = () => {
     const colors = themeColorsRgba.value;
-    if (!colors || !colors.props) return {};
+    if (!colors) return {};
 
     return {
       // 使用主题颜色变量
@@ -45,8 +47,11 @@ export function useThemeManager() {
    * 更新主题并应用到整个应用
    * @param newTheme 新的主题方案
    */
-  const applyTheme = (newTheme: { light: Scheme; dark: Scheme }) => {
-    updateThemeColors(newTheme);
+  const applyTheme = (newTheme: { light: ThemeScheme; dark: ThemeScheme }) => {
+    updateThemeColors({
+      light: newTheme.light,
+      dark: newTheme.dark,
+    });
     lastUpdatedTimestamp.value = Date.now();
   };
 
@@ -56,75 +61,69 @@ export function useThemeManager() {
   const resetToDefaultTheme = () => {
     // 深色模式默认主题
     const darkTheme = {
-      props: {
-        primary: 'rgba(0, 95, 175, 1.00)',
-        onPrimary: 'rgba(255, 255, 255, 1.00)',
-        primaryContainer: 'rgba(212, 227, 255, 1.00)',
-        onPrimaryContainer: 'rgba(0, 28, 58, 1.00)',
-        secondary: 'rgba(84, 95, 113, 1.00)',
-        onSecondary: 'rgba(255, 255, 255, 1.00)',
-        secondaryContainer: 'rgba(216, 227, 248, 1.00)',
-        onSecondaryContainer: 'rgba(17, 28, 43, 1.00)',
-        tertiary: 'rgba(110, 86, 118, 1.00)',
-        onTertiary: 'rgba(255, 255, 255, 1.00)',
-        tertiaryContainer: 'rgba(247, 216, 255, 1.00)',
-        onTertiaryContainer: 'rgba(39, 20, 48, 1.00)',
-        error: 'rgba(186, 26, 26, 1.00)',
-        onError: 'rgba(255, 255, 255, 1.00)',
-        errorContainer: 'rgba(255, 218, 214, 1.00)',
-        onErrorContainer: 'rgba(65, 0, 2, 1.00)',
-        background: 'rgba(18, 18, 18, 1.00)',
-        onBackground: 'rgba(255, 255, 255, 1.00)',
-        surface: 'rgba(18, 18, 18, 1.00)',
-        onSurface: 'rgba(255, 255, 255, 1.00)',
-        surfaceVariant: 'rgba(28, 28, 30, 1.00)',
-        onSurfaceVariant: 'rgba(200, 200, 200, 1.00)',
-        outline: 'rgba(116, 119, 127, 1.00)',
-        outlineVariant: 'rgba(68, 68, 70, 1.00)',
-        shadow: 'rgba(0, 0, 0, 1.00)',
-        scrim: 'rgba(0, 0, 0, 1.00)',
-        inverseSurface: 'rgba(47, 48, 51, 1.00)',
-        inverseOnSurface: 'rgba(241, 240, 244, 1.00)',
-        inversePrimary: 'rgba(165, 200, 255, 1.00)',
-      },
-      toJSON: () => ({}),
-    } as unknown as Scheme;
+      primary: argbFromRgb(0, 95, 175),
+      onPrimary: argbFromRgb(255, 255, 255),
+      primaryContainer: argbFromRgb(212, 227, 255),
+      onPrimaryContainer: argbFromRgb(0, 28, 58),
+      secondary: argbFromRgb(84, 95, 113),
+      onSecondary: argbFromRgb(255, 255, 255),
+      secondaryContainer: argbFromRgb(216, 227, 248),
+      onSecondaryContainer: argbFromRgb(17, 28, 43),
+      tertiary: argbFromRgb(110, 86, 118),
+      onTertiary: argbFromRgb(255, 255, 255),
+      tertiaryContainer: argbFromRgb(247, 216, 255),
+      onTertiaryContainer: argbFromRgb(39, 20, 48),
+      error: argbFromRgb(186, 26, 26),
+      onError: argbFromRgb(255, 255, 255),
+      errorContainer: argbFromRgb(255, 218, 214),
+      onErrorContainer: argbFromRgb(65, 0, 2),
+      background: argbFromRgb(18, 18, 18),
+      onBackground: argbFromRgb(255, 255, 255),
+      surface: argbFromRgb(18, 18, 18),
+      onSurface: argbFromRgb(255, 255, 255),
+      surfaceVariant: argbFromRgb(28, 28, 30),
+      onSurfaceVariant: argbFromRgb(200, 200, 200),
+      outline: argbFromRgb(116, 119, 127),
+      outlineVariant: argbFromRgb(68, 68, 70),
+      shadow: argbFromRgb(0, 0, 0),
+      scrim: argbFromRgb(0, 0, 0),
+      inverseSurface: argbFromRgb(47, 48, 51),
+      inverseOnSurface: argbFromRgb(241, 240, 244),
+      inversePrimary: argbFromRgb(165, 200, 255),
+    };
 
     // 亮色模式默认主题
     const lightTheme = {
-      props: {
-        primary: 'rgba(0, 95, 175, 1.00)',
-        onPrimary: 'rgba(255, 255, 255, 1.00)',
-        primaryContainer: 'rgba(212, 227, 255, 1.00)',
-        onPrimaryContainer: 'rgba(0, 28, 58, 1.00)',
-        secondary: 'rgba(84, 95, 113, 1.00)',
-        onSecondary: 'rgba(255, 255, 255, 1.00)',
-        secondaryContainer: 'rgba(216, 227, 248, 1.00)',
-        onSecondaryContainer: 'rgba(17, 28, 43, 1.00)',
-        tertiary: 'rgba(110, 86, 118, 1.00)',
-        onTertiary: 'rgba(255, 255, 255, 1.00)',
-        tertiaryContainer: 'rgba(247, 216, 255, 1.00)',
-        onTertiaryContainer: 'rgba(39, 20, 48, 1.00)',
-        error: 'rgba(186, 26, 26, 1.00)',
-        onError: 'rgba(255, 255, 255, 1.00)',
-        errorContainer: 'rgba(255, 218, 214, 1.00)',
-        onErrorContainer: 'rgba(65, 0, 2, 1.00)',
-        background: 'rgba(253, 252, 255, 1.00)',
-        onBackground: 'rgba(26, 28, 30, 1.00)',
-        surface: 'rgba(253, 252, 255, 1.00)',
-        onSurface: 'rgba(26, 28, 30, 1.00)',
-        surfaceVariant: 'rgba(224, 226, 236, 1.00)',
-        onSurfaceVariant: 'rgba(67, 71, 78, 1.00)',
-        outline: 'rgba(116, 119, 127, 1.00)',
-        outlineVariant: 'rgba(195, 198, 207, 1.00)',
-        shadow: 'rgba(0, 0, 0, 1.00)',
-        scrim: 'rgba(0, 0, 0, 1.00)',
-        inverseSurface: 'rgba(47, 48, 51, 1.00)',
-        inverseOnSurface: 'rgba(241, 240, 244, 1.00)',
-        inversePrimary: 'rgba(165, 200, 255, 1.00)',
-      },
-      toJSON: () => ({}),
-    } as unknown as Scheme;
+      primary: argbFromRgb(0, 95, 175),
+      onPrimary: argbFromRgb(255, 255, 255),
+      primaryContainer: argbFromRgb(212, 227, 255),
+      onPrimaryContainer: argbFromRgb(0, 28, 58),
+      secondary: argbFromRgb(84, 95, 113),
+      onSecondary: argbFromRgb(255, 255, 255),
+      secondaryContainer: argbFromRgb(216, 227, 248),
+      onSecondaryContainer: argbFromRgb(17, 28, 43),
+      tertiary: argbFromRgb(110, 86, 118),
+      onTertiary: argbFromRgb(255, 255, 255),
+      tertiaryContainer: argbFromRgb(247, 216, 255),
+      onTertiaryContainer: argbFromRgb(39, 20, 48),
+      error: argbFromRgb(186, 26, 26),
+      onError: argbFromRgb(255, 255, 255),
+      errorContainer: argbFromRgb(255, 218, 214),
+      onErrorContainer: argbFromRgb(65, 0, 2),
+      background: argbFromRgb(253, 252, 255),
+      onBackground: argbFromRgb(26, 28, 30),
+      surface: argbFromRgb(253, 252, 255),
+      onSurface: argbFromRgb(26, 28, 30),
+      surfaceVariant: argbFromRgb(224, 226, 236),
+      onSurfaceVariant: argbFromRgb(67, 71, 78),
+      outline: argbFromRgb(116, 119, 127),
+      outlineVariant: argbFromRgb(195, 198, 207),
+      shadow: argbFromRgb(0, 0, 0),
+      scrim: argbFromRgb(0, 0, 0),
+      inverseSurface: argbFromRgb(47, 48, 51),
+      inverseOnSurface: argbFromRgb(241, 240, 244),
+      inversePrimary: argbFromRgb(165, 200, 255),
+    };
 
     // 更新主题颜色
     updateThemeColors({

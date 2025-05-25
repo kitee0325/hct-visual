@@ -45,19 +45,19 @@ const cleanChartOptions = (option: any) => {
 // Compute theme styles
 const chartStyles = computed(() => {
   const colors = themeColorsRgba.value;
-  if (!colors || !colors.props) return {};
+  if (!colors) return {};
 
   return {
-    backgroundColor: colors.surface || colors.props.surface,
-    color: colors.onSurface || colors.props.onSurface,
-    borderColor: colors.outline || colors.props.outline,
+    backgroundColor: colors.surface,
+    color: colors.onSurface,
+    borderColor: colors.outline,
   };
 });
 
 // Generate theme-aware color palette
 const getColorPalette = () => {
   const colors = themeColorsRgba.value;
-  if (!colors || !colors.props) return [];
+  if (!colors) return [];
 
   // Helper function to calculate color difference (using simple RGB distance)
   const getColorDifference = (color1: string, color2: string) => {
@@ -78,17 +78,17 @@ const getColorPalette = () => {
 
   // Get all available colors from the theme
   const availableColors = [
-    colors.props.primary,
-    colors.props.secondary,
-    colors.props.tertiary,
-    colors.props.error,
-    colors.props.primaryContainer,
-    colors.props.secondaryContainer,
-    colors.props.tertiaryContainer,
-    colors.props.errorContainer,
+    colors.primary,
+    colors.secondary,
+    colors.tertiary,
+    colors.error,
+    colors.primaryContainer,
+    colors.secondaryContainer,
+    colors.tertiaryContainer,
+    colors.errorContainer,
   ];
 
-  const backgroundColor = colors.surface || colors.props.surface;
+  const backgroundColor = colors.surface;
   const MIN_BACKGROUND_DIFFERENCE = 100; // Minimum difference from background color
   const MIN_ADJACENT_DIFFERENCE = 80; // Minimum difference between adjacent colors
 
@@ -113,23 +113,18 @@ const getColorPalette = () => {
 
   // If we don't have enough colors, add some high-contrast combinations
   if (optimizedPalette.length < 4) {
-    if (!optimizedPalette.includes(colors.props.error)) {
-      optimizedPalette.push(colors.props.error);
+    if (!optimizedPalette.includes(colors.error)) {
+      optimizedPalette.push(colors.error);
     }
-    if (!optimizedPalette.includes(colors.props.tertiary)) {
-      optimizedPalette.push(colors.props.tertiary);
+    if (!optimizedPalette.includes(colors.tertiary)) {
+      optimizedPalette.push(colors.tertiary);
     }
   }
 
   // Ensure we have at least some colors to work with
   return optimizedPalette.length > 0
     ? optimizedPalette
-    : [
-        colors.props.error,
-        colors.props.tertiary,
-        colors.props.primary,
-        colors.props.secondary,
-      ];
+    : [colors.error, colors.tertiary, colors.primary, colors.secondary];
 };
 
 // Area Chart (area-stack-gradient)
@@ -183,11 +178,11 @@ const initAreaChart = () => {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             {
               offset: 0,
-              color: themeColorsRgba.value.props.primary,
+              color: themeColorsRgba.value.primary,
             },
             {
               offset: 1,
-              color: themeColorsRgba.value.props.primaryContainer,
+              color: themeColorsRgba.value.primaryContainer,
             },
           ]),
         },
@@ -210,11 +205,11 @@ const initAreaChart = () => {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             {
               offset: 0,
-              color: themeColorsRgba.value.props.secondary,
+              color: themeColorsRgba.value.secondary,
             },
             {
               offset: 1,
-              color: themeColorsRgba.value.props.secondaryContainer,
+              color: themeColorsRgba.value.secondaryContainer,
             },
           ]),
         },
@@ -237,11 +232,11 @@ const initAreaChart = () => {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             {
               offset: 0,
-              color: themeColorsRgba.value.props.tertiary,
+              color: themeColorsRgba.value.tertiary,
             },
             {
               offset: 1,
-              color: themeColorsRgba.value.props.tertiaryContainer,
+              color: themeColorsRgba.value.tertiaryContainer,
             },
           ]),
         },
@@ -264,11 +259,11 @@ const initAreaChart = () => {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             {
               offset: 0,
-              color: themeColorsRgba.value.props.error,
+              color: themeColorsRgba.value.error,
             },
             {
               offset: 1,
-              color: themeColorsRgba.value.props.errorContainer,
+              color: themeColorsRgba.value.errorContainer,
             },
           ]),
         },
@@ -291,11 +286,11 @@ const initAreaChart = () => {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             {
               offset: 0,
-              color: themeColorsRgba.value.props.primaryContainer,
+              color: themeColorsRgba.value.primaryContainer,
             },
             {
               offset: 1,
-              color: themeColorsRgba.value.props.primary,
+              color: themeColorsRgba.value.primary,
             },
           ]),
         },
@@ -707,12 +702,12 @@ const initScatterChart = () => {
       },
       splitLine: {
         lineStyle: {
-          color: themeColorsRgba.value.props.outlineVariant,
+          color: themeColorsRgba.value.outlineVariant,
         },
       },
       axisLine: {
         lineStyle: {
-          color: themeColorsRgba.value.props.outline,
+          color: themeColorsRgba.value.outline,
         },
       },
       axisTick: {
@@ -727,12 +722,12 @@ const initScatterChart = () => {
       },
       splitLine: {
         lineStyle: {
-          color: themeColorsRgba.value.props.outlineVariant,
+          color: themeColorsRgba.value.outlineVariant,
         },
       },
       axisLine: {
         lineStyle: {
-          color: themeColorsRgba.value.props.outline,
+          color: themeColorsRgba.value.outline,
         },
       },
       axisTick: {
@@ -752,14 +747,14 @@ const initScatterChart = () => {
       splitNumber: 8,
       inRange: {
         color: [
-          themeColorsRgba.value.props.primaryContainer,
-          themeColorsRgba.value.props.primary,
-          themeColorsRgba.value.props.tertiaryContainer,
-          themeColorsRgba.value.props.tertiary,
-          themeColorsRgba.value.props.secondaryContainer,
-          themeColorsRgba.value.props.secondary,
-          themeColorsRgba.value.props.errorContainer,
-          themeColorsRgba.value.props.error,
+          themeColorsRgba.value.primaryContainer,
+          themeColorsRgba.value.primary,
+          themeColorsRgba.value.tertiaryContainer,
+          themeColorsRgba.value.tertiary,
+          themeColorsRgba.value.secondaryContainer,
+          themeColorsRgba.value.secondary,
+          themeColorsRgba.value.errorContainer,
+          themeColorsRgba.value.error,
         ],
       },
     },
@@ -840,18 +835,18 @@ const initRadarChart = () => {
         { name: 'Chrome', max: 380 },
       ],
       axisName: {
-        color: themeColorsRgba.value.props.onSurfaceVariant,
+        color: themeColorsRgba.value.onSurfaceVariant,
       },
       axisLine: {
         show: true,
         lineStyle: {
-          color: themeColorsRgba.value.props.outline,
+          color: themeColorsRgba.value.outline,
         },
       },
       splitLine: {
         show: true,
         lineStyle: {
-          color: themeColorsRgba.value.props.outlineVariant,
+          color: themeColorsRgba.value.outlineVariant,
         },
       },
       splitArea: {
@@ -1093,14 +1088,14 @@ const initHeatmapChart = () => {
       splitNumber: 8,
       inRange: {
         color: [
-          themeColorsRgba.value.props.primaryContainer,
-          themeColorsRgba.value.props.primary,
-          themeColorsRgba.value.props.tertiaryContainer,
-          themeColorsRgba.value.props.tertiary,
-          themeColorsRgba.value.props.secondaryContainer,
-          themeColorsRgba.value.props.secondary,
-          themeColorsRgba.value.props.errorContainer,
-          themeColorsRgba.value.props.error,
+          themeColorsRgba.value.primaryContainer,
+          themeColorsRgba.value.primary,
+          themeColorsRgba.value.tertiaryContainer,
+          themeColorsRgba.value.tertiary,
+          themeColorsRgba.value.secondaryContainer,
+          themeColorsRgba.value.secondary,
+          themeColorsRgba.value.errorContainer,
+          themeColorsRgba.value.error,
         ],
       },
     },
@@ -1185,11 +1180,11 @@ const initMapChart = async () => {
         max: 100,
         inRange: {
           color: [
-            themeColorsRgba.value.props.primaryContainer,
-            themeColorsRgba.value.props.primary,
-            themeColorsRgba.value.props.secondary,
-            themeColorsRgba.value.props.tertiary,
-            themeColorsRgba.value.props.error,
+            themeColorsRgba.value.primaryContainer,
+            themeColorsRgba.value.primary,
+            themeColorsRgba.value.secondary,
+            themeColorsRgba.value.tertiary,
+            themeColorsRgba.value.error,
           ],
         },
         text: ['High', 'Low'],
@@ -1204,7 +1199,7 @@ const initMapChart = async () => {
             disabled: true,
           },
           itemStyle: {
-            borderColor: themeColorsRgba.value.props.outline,
+            borderColor: themeColorsRgba.value.outline,
             borderWidth: 0.5,
           },
           silent: true,
@@ -1367,12 +1362,12 @@ const initParallelChart = () => {
         max: 31,
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1383,12 +1378,12 @@ const initParallelChart = () => {
         dim: 1,
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1399,12 +1394,12 @@ const initParallelChart = () => {
         dim: 2,
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1415,12 +1410,12 @@ const initParallelChart = () => {
         dim: 3,
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1431,12 +1426,12 @@ const initParallelChart = () => {
         dim: 4,
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1447,12 +1442,12 @@ const initParallelChart = () => {
         dim: 5,
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1463,12 +1458,12 @@ const initParallelChart = () => {
         dim: 6,
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1481,12 +1476,12 @@ const initParallelChart = () => {
         data: ['优', '良', '轻度污染', '中度污染', '重度污染', '严重污染'],
         axisLine: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outline,
+            color: themeColorsRgba.value.outline,
           },
         },
         axisTick: {
           lineStyle: {
-            color: themeColorsRgba.value.props.outlineVariant,
+            color: themeColorsRgba.value.outlineVariant,
           },
         },
         axisLabel: {
@@ -1501,9 +1496,9 @@ const initParallelChart = () => {
       dimension: 2,
       inRange: {
         color: [
-          themeColorsRgba.value.props.error,
-          themeColorsRgba.value.props.tertiary,
-          themeColorsRgba.value.props.primary,
+          themeColorsRgba.value.error,
+          themeColorsRgba.value.tertiary,
+          themeColorsRgba.value.primary,
         ],
       },
     },
@@ -1519,7 +1514,7 @@ const initParallelChart = () => {
         type: 'parallel',
         lineStyle: {
           ...lineStyle,
-          color: themeColorsRgba.value.props.primary,
+          color: themeColorsRgba.value.primary,
         },
         silent: true,
         data: dataBJ,
@@ -1529,7 +1524,7 @@ const initParallelChart = () => {
         type: 'parallel',
         lineStyle: {
           ...lineStyle,
-          color: themeColorsRgba.value.props.secondary,
+          color: themeColorsRgba.value.secondary,
         },
         silent: true,
         data: dataSH,
@@ -1539,7 +1534,7 @@ const initParallelChart = () => {
         type: 'parallel',
         lineStyle: {
           ...lineStyle,
-          color: themeColorsRgba.value.props.tertiary,
+          color: themeColorsRgba.value.tertiary,
         },
         silent: true,
         data: dataGZ,
@@ -1576,7 +1571,7 @@ const initCharts = () => {
 
 // Update chart display when theme changes
 const updateChartDisplay = () => {
-  if (!themeColorsRgba.value || !themeColorsRgba.value.props) return;
+  if (!themeColorsRgba.value) return;
 
   // Apply theme colors to all charts
   initCharts();

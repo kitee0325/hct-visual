@@ -32,10 +32,7 @@ interface ThemeColorHct {
 }
 
 interface SchemeProps {
-  props: {
-    [key: string]: number;
-  };
-  toJSON: () => Record<string, unknown>;
+  toJSON: () => Record<string, number>;
 }
 
 const themeColorsHct = computed<ThemeColorHct[]>(() => {
@@ -46,12 +43,9 @@ const themeColorsHct = computed<ThemeColorHct[]>(() => {
 
   if (!currentTheme) return [];
 
-  const scheme = currentTheme as unknown as SchemeProps;
-  if (!scheme.props) return [];
-
-  Object.entries(scheme.props).forEach(([id, value]) => {
+  Object.entries(currentTheme).forEach(([id, value]) => {
     // 跳过非颜色属性
-    if (id === 'toJSON' || typeof value !== 'number') {
+    if (typeof value !== 'number') {
       return;
     }
     // ARGB转HCT

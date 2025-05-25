@@ -9,7 +9,10 @@ import {
   themeFromImage,
 } from '@material/material-color-utilities';
 import { parseColorToArgb } from '../tools/color';
-import { useThemeManager } from '../composables/useThemeManager';
+import {
+  useThemeManager,
+  type ThemeScheme,
+} from '../composables/useThemeManager';
 import { useThemeColors } from '../composables/useThemeColors';
 import { useElementTheme } from '../composables/useElementTheme';
 
@@ -104,7 +107,11 @@ function generateTheme() {
         theme = await themeFromImage(img);
         if (theme && theme.schemes) {
           // 使用主题管理器的applyTheme方法
-          applyTheme(theme.schemes);
+          const themeData: { light: ThemeScheme; dark: ThemeScheme } = {
+            light: theme.schemes.light.toJSON(),
+            dark: theme.schemes.dark.toJSON(),
+          };
+          applyTheme(themeData);
           // 应用到Element Plus组件
           applyElementTheme();
           ElMessage({
@@ -136,8 +143,12 @@ function generateTheme() {
       );
 
       if (theme && theme.schemes) {
-        // 使用主题管理器的applyTheme方法
-        applyTheme(theme.schemes);
+        // 使用主题管理器的applyTheme方法，直接使用toJSON()
+        const themeData: { light: ThemeScheme; dark: ThemeScheme } = {
+          light: theme.schemes.light.toJSON(),
+          dark: theme.schemes.dark.toJSON(),
+        };
+        applyTheme(themeData);
         // 应用到Element Plus组件
         applyElementTheme();
         ElMessage({
@@ -288,7 +299,7 @@ function copyColorToClipboard(color: string) {
       <div class="form-theme-result">
         <div
           class="form-theme-result-item"
-          v-for="(color, key) in themeColorsRgba.props"
+          v-for="(color, key) in themeColorsRgba"
           :key="key"
         >
           <div class="form-theme-result-item-label">{{ key }}</div>

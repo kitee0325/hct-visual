@@ -34,45 +34,18 @@ export function parseColorToArgb(color: string): number {
 }
 
 /**
- * Recursively transforms a Scheme object by converting ARGB values to RGBA strings
+ * Recursively transforms a color scheme object by converting ARGB values to RGBA strings
  * @param scheme The color scheme object to transform
  * @returns A new object with ARGB values converted to RGBA strings
  */
-export function transformSchemeToRgba(scheme: any): any {
-  const result: any = {};
+export function transformSchemeToRgba(
+  scheme: Record<string, number>
+): Record<string, string> {
+  const result: Record<string, string> = {};
 
-  // 如果是 Scheme 对象，从 props 中获取颜色值
-  if (scheme && typeof scheme === 'object' && 'props' in scheme) {
-    for (const key in scheme.props) {
-      if (typeof scheme.props[key] === 'number') {
-        result[key] = getColorFromArgb(scheme.props[key]);
-      }
-    }
-  } else {
-    // 处理普通对象
-    for (const key in scheme) {
-      if (typeof scheme[key] === 'object' && scheme[key] !== null) {
-        result[key] = transformSchemeToRgba(scheme[key]);
-      } else if (typeof scheme[key] === 'number') {
-        result[key] = getColorFromArgb(scheme[key]);
-      } else {
-        result[key] = scheme[key];
-      }
-    }
-  }
-
-  // 添加props属性用于模板中的v-for循环
-  if (!result.props) {
-    result.props = {};
-    for (const key in result) {
-      if (
-        key !== 'toJSON' &&
-        key !== 'props' &&
-        typeof result[key] === 'string' &&
-        result[key].startsWith('rgba')
-      ) {
-        result.props[key] = result[key];
-      }
+  for (const key in scheme) {
+    if (typeof scheme[key] === 'number') {
+      result[key] = getColorFromArgb(scheme[key]);
     }
   }
 
