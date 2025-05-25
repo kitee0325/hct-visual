@@ -186,24 +186,32 @@ function copyColorToClipboard(color: string) {
 // Function to export color palette as image
 function exportPalette() {
   const colors = Object.entries(themeColorsRgba.value);
-  const padding = 20;
-  const colorBoxSize = 60;
-  const labelHeight = 20;
+  const padding = 24;
+  const colorBoxSize = 80;
+  const labelHeight = 30;
   const columns = 4;
   const rows = Math.ceil(colors.length / columns);
+  const cornerRadius = 8; // Added corner radius
 
-  // Create canvas
+  // Create canvas with higher resolution for better text rendering
+  const scale = 2; // Scale factor for higher resolution
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // Set canvas size
-  canvas.width = (colorBoxSize + padding) * columns + padding;
-  canvas.height = (colorBoxSize + labelHeight + padding) * rows + padding;
+  // Set canvas size with scaling
+  canvas.width = ((colorBoxSize + padding) * columns + padding) * scale;
+  canvas.height =
+    ((colorBoxSize + labelHeight + padding) * rows + padding) * scale;
+  ctx.scale(scale, scale);
+
+  // Enable text anti-aliasing
+  ctx.textRendering = 'optimizeLegibility';
+  ctx.imageSmoothingEnabled = true;
 
   // Set background
   ctx.fillStyle = isDarkMode.value ? '#1a1a1a' : '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillRect(0, 0, canvas.width / scale, canvas.height / scale);
 
   // Draw color boxes and labels
   colors.forEach(([key, color], index) => {
@@ -212,15 +220,42 @@ function exportPalette() {
     const x = padding + col * (colorBoxSize + padding);
     const y = padding + row * (colorBoxSize + labelHeight + padding);
 
-    // Draw color box
+    // Draw rounded color box
+    ctx.beginPath();
+    ctx.roundRect(x, y, colorBoxSize, colorBoxSize, cornerRadius);
     ctx.fillStyle = color;
-    ctx.fillRect(x, y, colorBoxSize, colorBoxSize);
+    ctx.fill();
 
-    // Draw label
+    // Draw label with better text rendering
     ctx.fillStyle = isDarkMode.value ? '#ffffff' : '#000000';
-    ctx.font = '12px Arial';
+    ctx.font =
+      '14px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(key, x + colorBoxSize / 2, y + colorBoxSize + labelHeight / 2);
+    ctx.textBaseline = 'middle';
+
+    // Break long labels into multiple lines if needed
+    const words = key.split(/(?=[A-Z])/);
+    const maxLineWidth = colorBoxSize * 1.2;
+    let lines = [''];
+    let currentLine = 0;
+
+    words.forEach((word) => {
+      const testLine = lines[currentLine] + word;
+      const metrics = ctx.measureText(testLine);
+      if (metrics.width > maxLineWidth && lines[currentLine] !== '') {
+        currentLine++;
+        lines[currentLine] = word;
+      } else {
+        lines[currentLine] = testLine;
+      }
+    });
+
+    // Draw each line of text
+    lines.forEach((line, i) => {
+      const lineY =
+        y + colorBoxSize + (labelHeight / (lines.length + 1)) * (i + 1);
+      ctx.fillText(line, x + colorBoxSize / 2, lineY);
+    });
   });
 
   // Export as PNG
