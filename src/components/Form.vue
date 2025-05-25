@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Plus, Delete, Moon, Sunny } from '@element-plus/icons-vue';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { UploadFile } from 'element-plus';
 import {
@@ -9,10 +9,7 @@ import {
   themeFromImage,
 } from '@material/material-color-utilities';
 import { parseColorToArgb } from '../tools/color';
-import {
-  useThemeManager,
-  type ThemeScheme,
-} from '../composables/useThemeManager';
+import { useThemeManager } from '../composables/useThemeManager';
 import { useThemeColors } from '../composables/useThemeColors';
 import { useElementTheme } from '../composables/useElementTheme';
 
@@ -78,87 +75,87 @@ function handleColorChange(color: string) {
   latestAction.value = 'color';
 }
 
+// 在generateTheme函数之前添加新的辅助函数
+function applyGeneratedTheme(theme: any, source: 'image' | 'color') {
+  if (!theme?.schemes) {
+    throw new Error(`Failed to generate theme from ${source}`);
+  }
+
+  // 处理自定义颜色
+  const themeData = {
+    light: { ...theme.schemes.light.toJSON() },
+    dark: { ...theme.schemes.dark.toJSON() },
+  };
+
+  // 合并自定义颜色到主题中
+  theme.customColors.forEach((customColor: any, index: number) => {
+    const prefix = `custom${index + 1}`;
+
+    // 合并亮色主题的自定义颜色
+    themeData.light[`${prefix}`] = customColor.light.color;
+    themeData.light[`on${prefix}`] = customColor.light.onColor;
+    themeData.light[`${prefix}Container`] = customColor.light.colorContainer;
+    themeData.light[`on${prefix}Container`] =
+      customColor.light.onColorContainer;
+
+    // 合并暗色主题的自定义颜色
+    themeData.dark[`${prefix}`] = customColor.dark.color;
+    themeData.dark[`on${prefix}`] = customColor.dark.onColor;
+    themeData.dark[`${prefix}Container`] = customColor.dark.colorContainer;
+    themeData.dark[`on${prefix}Container`] = customColor.dark.onColorContainer;
+  });
+
+  applyTheme(themeData);
+  applyElementTheme();
+
+  ElMessage({
+    message: 'Theme generated successfully!',
+    type: 'success',
+    duration: 2000,
+  });
+}
+
 function generateTheme() {
-  let theme;
+  const customColorObjects = customColorsArgb.value.map(
+    (argb, index) =>
+      ({
+        value: argb,
+        name: `Custom Color ${index + 1}`,
+        blend: true,
+      } as CustomColor)
+  );
   if (latestAction.value === 'image') {
     if (!imageUrl.value) {
       ElMessage.error('Upload image first');
       return;
     }
 
-    // Show loading message
     ElMessage({
       message: 'Generating theme from image...',
       type: 'info',
       duration: 2000,
     });
 
-    // 创建图像元素并加载
     const img = new Image();
     img.src = imageUrl.value;
-
-    // Add error handling
-    img.onerror = () => {
-      ElMessage.error('Failed to load image');
-    };
+    img.onerror = () => ElMessage.error('Failed to load image');
 
     img.onload = async () => {
       try {
-        theme = await themeFromImage(img);
-        if (theme && theme.schemes) {
-          // 使用主题管理器的applyTheme方法
-          const themeData: { light: ThemeScheme; dark: ThemeScheme } = {
-            light: theme.schemes.light.toJSON(),
-            dark: theme.schemes.dark.toJSON(),
-          };
-          applyTheme(themeData);
-          // 应用到Element Plus组件
-          applyElementTheme();
-          ElMessage({
-            message: 'Theme generated successfully!',
-            type: 'success',
-            duration: 2000,
-          });
-        } else {
-          ElMessage.error('Failed to generate theme from image');
-        }
+        const theme = await themeFromImage(img, customColorObjects);
+        applyGeneratedTheme(theme, 'image');
       } catch (error) {
         ElMessage.error('Error generating theme from image');
       }
     };
   } else {
-    // 将原始ARGB值转换为CustomColor对象
-    const customColorObjects = customColorsArgb.value.map((argb, index) => {
-      return {
-        value: argb,
-        name: `Custom Color ${index + 1}`,
-        blend: true,
-      } as CustomColor;
-    });
-
     try {
-      theme = themeFromSourceColor(
+      const theme = themeFromSourceColor(
         parseColorToArgb(colorSelected.value),
         customColorObjects
       );
 
-      if (theme && theme.schemes) {
-        // 使用主题管理器的applyTheme方法，直接使用toJSON()
-        const themeData: { light: ThemeScheme; dark: ThemeScheme } = {
-          light: theme.schemes.light.toJSON(),
-          dark: theme.schemes.dark.toJSON(),
-        };
-        applyTheme(themeData);
-        // 应用到Element Plus组件
-        applyElementTheme();
-        ElMessage({
-          message: 'Theme generated successfully!',
-          type: 'success',
-          duration: 2000,
-        });
-      } else {
-        ElMessage.error('Failed to generate theme from color');
-      }
+      applyGeneratedTheme(theme, 'color');
     } catch (error) {
       ElMessage.error('Error generating theme from color');
     }
