@@ -182,6 +182,63 @@ function copyColorToClipboard(color: string) {
       console.error('Could not copy text: ', err);
     });
 }
+
+// Function to export color palette as image
+function exportPalette() {
+  const colors = Object.entries(themeColorsRgba.value);
+  const padding = 20;
+  const colorBoxSize = 60;
+  const labelHeight = 20;
+  const columns = 4;
+  const rows = Math.ceil(colors.length / columns);
+
+  // Create canvas
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  // Set canvas size
+  canvas.width = (colorBoxSize + padding) * columns + padding;
+  canvas.height = (colorBoxSize + labelHeight + padding) * rows + padding;
+
+  // Set background
+  ctx.fillStyle = isDarkMode.value ? '#1a1a1a' : '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw color boxes and labels
+  colors.forEach(([key, color], index) => {
+    const row = Math.floor(index / columns);
+    const col = index % columns;
+    const x = padding + col * (colorBoxSize + padding);
+    const y = padding + row * (colorBoxSize + labelHeight + padding);
+
+    // Draw color box
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, colorBoxSize, colorBoxSize);
+
+    // Draw label
+    ctx.fillStyle = isDarkMode.value ? '#ffffff' : '#000000';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(key, x + colorBoxSize / 2, y + colorBoxSize + labelHeight / 2);
+  });
+
+  // Export as PNG
+  try {
+    const link = document.createElement('a');
+    link.download = 'color-palette.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+
+    ElMessage({
+      message: 'Color palette exported successfully!',
+      type: 'success',
+      duration: 2000,
+    });
+  } catch (error) {
+    ElMessage.error('Failed to export color palette');
+  }
+}
 </script>
 
 <template>
@@ -291,7 +348,17 @@ function copyColorToClipboard(color: string) {
       >
     </div>
 
-    <h2>Browser Theme</h2>
+    <div class="form-theme-header">
+      <h2>Browser Theme</h2>
+      <el-button
+        type="info"
+        size="small"
+        @click="exportPalette"
+        class="form-theme-export-btn"
+      >
+        Export Palette
+      </el-button>
+    </div>
     <div class="form-theme">
       <div class="form-theme-result">
         <div
@@ -387,6 +454,33 @@ $border-color: #d9d9d9;
 
     &:not(:first-of-type) {
       margin-top: 32px;
+    }
+  }
+
+  // Theme header section
+  &-theme-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    h2 {
+      margin: 0;
+      padding-bottom: 0;
+
+      &:after {
+        bottom: -8px;
+      }
+    }
+
+    .el-button {
+      margin-left: 16px;
+      transition: $transition-base;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--theme-box-shadow-light);
+      }
     }
   }
 
