@@ -1,28 +1,11 @@
 <script setup lang="ts">
-import Form from '@/components/Form.vue';
-import Display from '@/components/Display.vue';
+// 这里不再直接引入Form和Display组件，交由路由管理
 </script>
 
 <template>
-  <aside class="form-wrapper">
-    <Form />
-  </aside>
-  <main class="display-wrapper">
-    <Display />
-  </main>
+  <router-view />
 </template>
 
 <style scoped lang="scss">
-$form-width: 35%;
-
-.form-wrapper {
-  width: $form-width;
-  height: 100%;
-  padding: 16px 10px 16px 20px;
-}
-.display-wrapper {
-  width: calc(100% - $form-width);
-  height: 100%;
-  padding: 16px 20px 16px 10px;
-}
+// 保持样式为空或根据需要添加全局样式
 </style>

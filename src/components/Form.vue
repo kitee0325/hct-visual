@@ -77,6 +77,7 @@ function handleColorChange(color: string) {
 
 // 在generateTheme函数之前添加新的辅助函数
 function applyGeneratedTheme(theme: any, source: 'image' | 'color') {
+  console.log(theme);
   if (!theme?.schemes) {
     throw new Error(`Failed to generate theme from ${source}`);
   }

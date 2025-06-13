@@ -6,7 +6,10 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import { useElementTheme } from './composables/useElementTheme';
 
+// 引入封装好的router
+import router from './router';
+
 // 初始化Element Plus主题
 useElementTheme();
 
-createApp(App).mount('#app');
+createApp(App).use(router).mount('#app');

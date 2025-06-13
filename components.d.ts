@@ -32,8 +32,12 @@ declare module 'vue' {
     Form: typeof import('./src/components/Form.vue')['default']
     Hct: typeof import('./src/components/Hct.vue')['default']
     Header: typeof import('./src/components/Header.vue')['default']
+    Home: typeof import('./src/components/Home.vue')['default']
+    HomeLayout: typeof import('./src/components/HomeLayout.vue')['default']
     RenderChart: typeof import('./src/components/RenderChart.vue')['default']
     RenderUI: typeof import('./src/components/RenderUI.vue')['default']
+    RouterLink: typeof import('vue-router')['RouterLink']
+    RouterView: typeof import('vue-router')['RouterView']
     ThemeProvider: typeof import('./src/components/ThemeProvider.vue')['default']
   }
 }
